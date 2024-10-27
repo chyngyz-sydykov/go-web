@@ -6,14 +6,15 @@ import (
 	"testing"
 
 	"github.com/chyngyz-sydykov/go-web/handlers"
-	"github.com/chyngyz-sydykov/go-web/middlewares"
+	"github.com/chyngyz-sydykov/go-web/middleware"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestIsContentTypeSetToResponseHeader(t *testing.T) {
 
+	middlewareController := middleware.NewMiddlewareController()
 	// Create the handler with the middleware applied
-	handlerWithMiddleware := middlewares.SetHeadersMiddleware(http.HandlerFunc(handlers.HelloHandler))
+	handlerWithMiddleware := middlewareController.Chain(http.HandlerFunc(handlers.HelloHandler))
 
 	// Create a request to pass to the handler
 	req, err := http.NewRequest("GET", "/", nil)

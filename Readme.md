@@ -9,3 +9,7 @@ to clean up go.sum run
 to run test
 
 `go test ./subdirectory/`
+
+running project via docker
+`docker-compose up --build`
+`docker-compose down`

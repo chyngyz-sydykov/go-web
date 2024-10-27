@@ -15,10 +15,9 @@ func main() {
 		log.Fatalf("Could not load config: %v", err)
 	}
 
-	router := http.NewServeMux()
+	mux := http.NewServeMux()
 	middlewareController := middleware.NewMiddlewareController()
 	HelloHandler := http.HandlerFunc(handlers.HelloHandler)
-	router.Handle("/", middlewareController.Chain(HelloHandler))
-
-	http.ListenAndServe(":"+config.ApplicationPort, nil)
+	mux.Handle("/", middlewareController.Chain(HelloHandler))
+	http.ListenAndServe(":"+config.ApplicationPort, mux)
 }

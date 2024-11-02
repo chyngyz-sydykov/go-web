@@ -6,6 +6,9 @@ services:
       - "${APPLICATION_PORT}:${APPLICATION_PORT}"
     volumes:
       - .:/app
+      - /app/bin
+    environment:
+      - APP_ENV=development
     depends_on:
       - db
   db:

@@ -1,14 +1,21 @@
 # Start from the official Go image
 FROM golang:1.23-alpine
+
+# Install dependencies
+RUN apk add --no-cache git bash postgresql-client
+RUN go env -w GOFLAGS=-buildvcs=false
+RUN go install github.com/air-verse/air@latest
+
 # Set the Current Working Directory inside the container
 WORKDIR /app
+COPY . .
+# RUN adduser -D -g '' golang
+# RUN mkdir -p /app && chown -R golang:golang /app /go/pkg/mod
+# WORKDIR /app
+# USER golang
+# COPY --chown=golang:golang . .
 
-
-RUN apk add --no-cache postgresql-client
-# COPY . .
-# # Build the Go app
-# RUN go build -o /app/bin/restApi /app/cmd/restApi/main.go
-# Expose port 8080 to the outside world
 EXPOSE 8000
+
 # Run the executable
-CMD ["go", "run", "cmd/restApi/main.go"]
+CMD ["air", "-c", ".air.toml"]

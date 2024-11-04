@@ -18,4 +18,4 @@ COPY . .
 EXPOSE 8000
 
 # Run the executable
-CMD ["air", "-c", ".air.toml"]
+CMD ["air", "-d", "-c", ".air.toml"]

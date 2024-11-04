@@ -13,6 +13,14 @@ type Config struct {
 	ApplicationEnvironment string
 }
 
+type DBConfig struct {
+	Host     string
+	Port     string
+	Name     string
+	Username string
+	Password string
+}
+
 func LoadConfig() (*Config, error) {
 	err := godotenv.Load()
 	if err != nil {
@@ -26,6 +34,23 @@ func LoadConfig() (*Config, error) {
 	}
 
 	return config, nil
+}
+
+func LoadDBConfig() (*DBConfig, error) {
+	err := godotenv.Load()
+	if err != nil {
+		return nil, fmt.Errorf("error loading .env file")
+	}
+
+	dbConfig := &DBConfig{
+		Host:     getEnv("DB_HOST", "localhost"),
+		Port:     getEnv("DB_PORT", "5432"),
+		Name:     getEnv("DB_DATABASE", "database_name"),
+		Username: getEnv("DB_USERNAME", "postgres"),
+		Password: getEnv("DB_PASSWORD", "postgres"),
+	}
+
+	return dbConfig, nil
 }
 
 func getEnv(key, defaultValue string) string {

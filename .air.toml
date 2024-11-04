@@ -14,3 +14,8 @@ exclude_dir = [".git",".github", "bin", "vendor", "tests", "docker", "githooks",
 
 # Exclude any non-Go files if necessary
 extensions = ["go"]
+
+# Watch settings
+[log]
+# Make sure log level allows for output
+#level = "debug" # Options: debug, info, warn, error

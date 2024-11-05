@@ -4,10 +4,11 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/chyngyz-sydykov/go-web/application"
 	"github.com/chyngyz-sydykov/go-web/config"
 	"github.com/chyngyz-sydykov/go-web/db"
-	"github.com/chyngyz-sydykov/go-web/handlers"
 	"github.com/chyngyz-sydykov/go-web/middleware"
+	"github.com/chyngyz-sydykov/go-web/router"
 	"gorm.io/gorm"
 )
 
@@ -17,21 +18,23 @@ func main() {
 	if err != nil {
 		log.Fatalf("Could not load config: %v", err)
 	}
-	_ = initDb()
+	db := initializeDatabase()
+	app := application.InitializeApplication(db)
+	router := router.InitializeRouter(app)
 
-	mux := http.NewServeMux()
 	middlewareController := middleware.NewMiddlewareController()
-	HelloHandler := http.HandlerFunc(handlers.HelloHandler)
-	mux.Handle("/", middlewareController.Chain(HelloHandler))
-	http.ListenAndServe(":"+config.ApplicationPort, mux)
+
+	http.ListenAndServe(
+		":"+config.ApplicationPort,
+		middlewareController.Chain()(router))
 }
 
-func initDb() *gorm.DB {
+func initializeDatabase() *gorm.DB {
 	dbConfig, err := config.LoadDBConfig()
 	if err != nil {
 		log.Fatalf("Could not load database config: %v", err)
 	}
-	dbInstance, err := db.InitDb(dbConfig)
+	dbInstance, err := db.InitializeDatabase(dbConfig)
 	if err != nil {
 		log.Fatalf("Coult not initialize db connection %v", err)
 	}

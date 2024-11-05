@@ -11,6 +11,6 @@ type Book struct {
 	Title       string
 	ICBN        string
 	PublishedAt *time.Time
-	AuthorId    int8
+	AuthorId    int64 `gorm:"index"`
 	Author      Author
 }

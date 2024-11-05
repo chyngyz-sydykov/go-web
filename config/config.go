@@ -22,7 +22,7 @@ type DBConfig struct {
 }
 
 func LoadConfig() (*Config, error) {
-	err := godotenv.Load()
+	err := loadEnvFile()
 	if err != nil {
 		return nil, fmt.Errorf("error loading .env file")
 	}
@@ -37,9 +37,9 @@ func LoadConfig() (*Config, error) {
 }
 
 func LoadDBConfig() (*DBConfig, error) {
-	err := godotenv.Load()
+	err := loadEnvFile()
 	if err != nil {
-		return nil, fmt.Errorf("error loading .env file")
+		return nil, fmt.Errorf("error loading env file")
 	}
 
 	dbConfig := &DBConfig{
@@ -51,6 +51,17 @@ func LoadDBConfig() (*DBConfig, error) {
 	}
 
 	return dbConfig, nil
+}
+func loadEnvFile() error {
+	rootDir := os.Getenv("ROOT_DIR")
+	envFileName := rootDir + "/.env"
+
+	if os.Getenv("APP_ENV") != "development" {
+		envFileName = rootDir + "/.env." + os.Getenv("APP_ENV")
+	}
+
+	err := godotenv.Load(envFileName)
+	return err
 }
 
 func getEnv(key, defaultValue string) string {

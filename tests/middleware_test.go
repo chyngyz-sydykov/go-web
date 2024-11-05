@@ -5,16 +5,26 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/chyngyz-sydykov/go-web/handlers"
+	"github.com/chyngyz-sydykov/go-web/application"
 	"github.com/chyngyz-sydykov/go-web/middleware"
+	"github.com/chyngyz-sydykov/go-web/router"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestIsContentTypeSetToResponseHeader(t *testing.T) {
+func TesstIsContentTypeSetToResponseHeader(t *testing.T) {
+	db := initializeDatabase()
+	app := application.InitializeApplication(db)
+	router := router.InitializeRouter(app)
+
+	// middlewareController := middleware.NewMiddlewareController()
+
+	// http.ListenAndServe(
+	// 	":"+config.ApplicationPort,
+	// 	middlewareController.Chain()(router))
 
 	middlewareController := middleware.NewMiddlewareController()
 	// Create the handler with the middleware applied
-	handlerWithMiddleware := middlewareController.Chain(http.HandlerFunc(handlers.HelloHandler))
+	handlerWithMiddleware := middlewareController.Chain()(router)
 
 	// Create a request to pass to the handler
 	req, err := http.NewRequest("GET", "/", nil)

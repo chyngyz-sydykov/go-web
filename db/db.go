@@ -10,9 +10,13 @@ import (
 	"gorm.io/gorm"
 )
 
+type DBInstance struct {
+	*gorm.DB
+}
+
 var db *gorm.DB
 
-func InitDb(dbConfig *config.DBConfig) (*gorm.DB, error) {
+func InitializeDatabase(dbConfig *config.DBConfig) (*gorm.DB, error) {
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
 		dbConfig.Host, dbConfig.Username, dbConfig.Password, dbConfig.Name, dbConfig.Port)
 	var err error

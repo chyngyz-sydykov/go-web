@@ -4,7 +4,7 @@ import (
 	"net/http"
 )
 
-type Middleware func(http.HandlerFunc) http.HandlerFunc
+type Middleware func(http.Handler) http.HandlerFunc
 
 type MiddleWareController struct {
 	stack []Middleware
@@ -12,7 +12,8 @@ type MiddleWareController struct {
 
 func NewMiddlewareController() *MiddleWareController {
 	stack := []Middleware{
-		SetHeadersMiddleware,
+		SetHeaders,
+		LogRequest,
 	}
 
 	return &MiddleWareController{
@@ -20,17 +21,12 @@ func NewMiddlewareController() *MiddleWareController {
 	}
 }
 
-func (mc MiddleWareController) Chain(h http.HandlerFunc) http.HandlerFunc {
-	if len(mc.stack) < 1 {
-		return h
+func (mc MiddleWareController) Chain() Middleware {
+	return func(next http.Handler) http.HandlerFunc {
+		for i := len(mc.stack) - 1; i >= 0; i-- {
+			next = mc.stack[i](next)
+		}
+
+		return next.ServeHTTP
 	}
-
-	wrapped := h
-
-	// loop in reverse to preserve middleware order
-	for i := len(mc.stack) - 1; i >= 0; i-- {
-		wrapped = mc.stack[i](wrapped)
-	}
-
-	return wrapped
 }

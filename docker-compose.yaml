@@ -9,6 +9,7 @@ services:
       - /app/bin
     environment:
       - APP_ENV=development
+      - ROOT_DIR=/app
     depends_on:
       - db
   db:

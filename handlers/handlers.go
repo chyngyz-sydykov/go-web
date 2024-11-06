@@ -1,14 +1,35 @@
 package handlers
 
 import (
-	"fmt"
+	"encoding/json"
 	"net/http"
+
+	"github.com/chyngyz-sydykov/go-web/logger"
 )
 
 type AppHandlerInterface interface {
-	swagger()
 }
 
-func HelloHandler(responseWriter http.ResponseWriter, request *http.Request) {
-	fmt.Fprint(responseWriter, "hello world")
+type ErrorDetail struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
+type ErrorResponse struct {
+	Error ErrorDetail `json:"error"`
+}
+
+type CommonHandler struct {
+	logger *logger.Logger
+}
+
+func NewCommonHandler(logger *logger.Logger) *CommonHandler {
+
+	return &CommonHandler{logger: logger}
+}
+
+func (c *CommonHandler) HandleError(w http.ResponseWriter, err error, statusCode int, errorResponse ErrorResponse) {
+	c.logger.LogError(statusCode, err)
+	w.WriteHeader(statusCode)
+	json.NewEncoder(w).Encode(errorResponse)
 }

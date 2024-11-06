@@ -23,8 +23,8 @@ func (suite *IntegrationSuite) SetupSuite() {
 // TearDownSuite is called once after the test suite runs.
 func (suite *IntegrationSuite) TearDownSuite() {
 	// Clean up
-	err := suite.db.Exec("Truncate TABLE books;").Error
-	suite.Require().NoError(err, "Error dropping test table")
+	// err := suite.db.Exec("Truncate TABLE books;").Error
+	// suite.Require().NoError(err, "Error dropping test table")
 
 }
 

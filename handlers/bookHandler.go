@@ -10,14 +10,12 @@ import (
 )
 
 type BookHandler struct {
-	service book.BookService
+	service       book.BookService
+	commonHandler CommonHandler
 }
 
-func NewBookHandler(service book.BookService) *BookHandler {
-	return &BookHandler{service: service}
-}
-
-func (handler *BookHandler) swagger() {
+func NewBookHandler(service book.BookService, commonHandler CommonHandler) *BookHandler {
+	return &BookHandler{service: service, commonHandler: commonHandler}
 }
 
 func (handler *BookHandler) GetAll(w http.ResponseWriter, r *http.Request) {
@@ -25,26 +23,41 @@ func (handler *BookHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	books, err := handler.service.GetAll()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		handler.commonHandler.HandleError(w, err, http.StatusInternalServerError,
+			ErrorResponse{
+				Error: ErrorDetail{
+					Code:    "SERVER_ERROR",
+					Message: "server error",
+				},
+			})
 		return
 	}
 	json.NewEncoder(w).Encode(books)
 }
 
 func (handler *BookHandler) GetByID(w http.ResponseWriter, r *http.Request) {
-	stringId := r.PathValue("bookId")
-	if stringId == "" {
-		http.Error(w, "book id not provided", http.StatusBadRequest)
-		return
-	}
-	bookId, err := strconv.Atoi(stringId)
+	bookId, err := strconv.Atoi(r.PathValue("bookId"))
 
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		handler.commonHandler.HandleError(w, err, http.StatusBadRequest,
+			ErrorResponse{
+				Error: ErrorDetail{
+					Code:    "INVALID_REQUEST",
+					Message: "invalid book id",
+				},
+			})
+		return
 	}
 
 	book, err := handler.service.GetByID(bookId)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		handler.commonHandler.HandleError(w, err, http.StatusNotFound,
+			ErrorResponse{
+				Error: ErrorDetail{
+					Code:    "RESOURCE_NOT_FOUND",
+					Message: "Book with specified id is not found.",
+				},
+			})
 		return
 	}
 	json.NewEncoder(w).Encode(book)
@@ -52,8 +65,15 @@ func (handler *BookHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 func (handler *BookHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var book models.Book
-	if err := json.NewDecoder(r.Body).Decode(&book); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+	err := json.NewDecoder(r.Body).Decode(&book)
+	if err != nil {
+		handler.commonHandler.HandleError(w, err, http.StatusBadRequest,
+			ErrorResponse{
+				Error: ErrorDetail{
+					Code:    "INVALID_REQUEST",
+					Message: "provided book payload is invalid.",
+				},
+			})
 		return
 	}
 	if err := handler.service.Create(book); err != nil {

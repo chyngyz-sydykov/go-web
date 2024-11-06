@@ -15,7 +15,7 @@ import (
 	"github.com/chyngyz-sydykov/go-web/router"
 )
 
-func (suite *IntegrationSuite) TestShouldReturnSuccessResponseAndAllBooksWhenCallingGetAllEndpoint() {
+func (suite *IntegrationSuite) TestShouldReturnSuccessResponseAndAllBooks_WhenCallingGetAllEndpoint() {
 	// arrange
 	publishedAt := time.Now()
 	expectedBookModel := models.Book{Title: "John Doe", ICBN: "sdlfjskdflsdf234", PublishedAt: &publishedAt}
@@ -46,7 +46,7 @@ func (suite *IntegrationSuite) TestShouldReturnSuccessResponseAndAllBooksWhenCal
 	suite.db.Unscoped().Delete(&models.Book{}, expectedBookModel.ID)
 }
 
-func (suite *IntegrationSuite) TestShouldReturnSuccessResponseAndReturnSingleBookWhenCallingGetByIdEndpoint() {
+func (suite *IntegrationSuite) TestShouldReturnSuccessResponseAndReturnSingleBook_WhenCallingGetByIdEndpoint() {
 	// arrange
 	publishedAt := time.Now()
 	expectedBookModel := models.Book{Title: "John Doe", ICBN: "sdlfjskdflsdf234", PublishedAt: &publishedAt}
@@ -76,7 +76,7 @@ func (suite *IntegrationSuite) TestShouldReturnSuccessResponseAndReturnSingleBoo
 	suite.db.Unscoped().Delete(&models.Book{}, expectedBookModel.ID)
 }
 
-func (suite *IntegrationSuite) TestShouldReturnNotFoundResponseWithErrorMessageWhenCallingGetByIdEndpointWithNotExistingBookId() {
+func (suite *IntegrationSuite) TestShouldReturnNotFoundResponseWithErrorMessage_WhenCallingGetByIdEndpoint_WithNotExistingBookId() {
 	// arrange
 	req := httptest.NewRequest("GET", "/api/v1/books/999", nil)
 
@@ -97,7 +97,7 @@ func (suite *IntegrationSuite) TestShouldReturnNotFoundResponseWithErrorMessageW
 
 	suite.Suite.Assert().Equal("RESOURCE_NOT_FOUND", errorResponse.Error.Code)
 }
-func (suite *IntegrationSuite) TestShouldReturnBadResponseResponseWithErrorMessageWhenCallingGetByIdEndpointWithInvalidBookId() {
+func (suite *IntegrationSuite) TestShouldReturnBadResponseWithErrorMessage_WhenCallingGetByIdEndpoint_WithInvalidBookId() {
 	// arrange
 	req := httptest.NewRequest("GET", "/api/v1/books/invalidId", nil)
 
@@ -119,7 +119,7 @@ func (suite *IntegrationSuite) TestShouldReturnBadResponseResponseWithErrorMessa
 	suite.Suite.Assert().Equal("INVALID_REQUEST", errorResponse.Error.Code)
 }
 
-func (suite *IntegrationSuite) TestShouldReturnBadResponseResponseWithErrorMessageWhenCallingCreatingWithInvalidPayload() {
+func (suite *IntegrationSuite) TestShouldReturnBadResponseWithErrorMessage_WhenCreating_WithInvalidPayload() {
 	// arrange
 	req := httptest.NewRequest("POST", "/api/v1/books", nil)
 

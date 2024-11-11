@@ -36,6 +36,6 @@ func (repository *BookRepository) GetByID(id int) (models.Book, error) {
 	return book, nil
 }
 
-func (repository *BookRepository) Create(book models.Book) error {
+func (repository *BookRepository) Create(book *models.Book) error {
 	return repository.db.Create(&book).Error
 }

@@ -29,6 +29,6 @@ func (service *BookService) GetByID(id int) (models.Book, error) {
 	return service.repository.GetByID(id)
 }
 
-func (service *BookService) Create(book models.Book) error {
+func (service *BookService) Create(book *models.Book) error {
 	return service.repository.Create(book)
 }

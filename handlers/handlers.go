@@ -23,6 +23,10 @@ type CommonHandler struct {
 	logger *logger.Logger
 }
 
+const INVALID_REQUEST string = "INVALID_REQUEST"
+const RESOURCE_NOT_FOUND string = "RESOURCE_NOT_FOUND"
+const SERVER_ERROR string = "SERVER_ERROR"
+
 func NewCommonHandler(logger *logger.Logger) *CommonHandler {
 
 	return &CommonHandler{logger: logger}

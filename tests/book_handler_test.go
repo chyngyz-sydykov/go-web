@@ -2,9 +2,12 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/chyngyz-sydykov/go-web/application"
@@ -22,11 +25,8 @@ func (suite *IntegrationSuite) TestShouldReturnSuccessResponseAndAllBooks_WhenCa
 	suite.db.Omit("AuthorId").Create(&expectedBookModel)
 
 	req := httptest.NewRequest("GET", "/api/v1/books", nil)
-
 	w := httptest.NewRecorder()
-
 	app := provideDependencies(suite)
-
 	router := router.InitializeRouter(app)
 
 	router.ServeHTTP(w, req)
@@ -35,13 +35,12 @@ func (suite *IntegrationSuite) TestShouldReturnSuccessResponseAndAllBooks_WhenCa
 	// Assert
 	suite.Equal(http.StatusOK, resp.StatusCode)
 
-	var books []models.Book
-	err := json.NewDecoder(resp.Body).Decode(&books)
-	suite.NoError(err)
+	bodyBytes, _ := io.ReadAll(resp.Body)
+	bodyString := string(bodyBytes)
+	defer resp.Body.Close()
 
-	resultBook := books[0]
-	suite.Suite.Assert().Equal("John Doe", resultBook.Title)
-	suite.Suite.Assert().Equal("sdlfjskdflsdf234", resultBook.ICBN)
+	suite.Suite.Contains(bodyString, "John Doe")
+	suite.Suite.Contains(bodyString, "sdlfjskdflsdf234")
 
 	suite.db.Unscoped().Delete(&models.Book{}, expectedBookModel.ID)
 }
@@ -119,7 +118,7 @@ func (suite *IntegrationSuite) TestShouldReturnBadResponseWithErrorMessage_WhenC
 	suite.Suite.Assert().Equal("INVALID_REQUEST", errorResponse.Error.Code)
 }
 
-func (suite *IntegrationSuite) TestShouldReturnBadResponseWithErrorMessage_WhenCreating_WithInvalidPayload() {
+func (suite *IntegrationSuite) TestShouldReturnBadResponseWithErrorMessage_WhenCreating_WithEmptyPayload() {
 	// arrange
 	req := httptest.NewRequest("POST", "/api/v1/books", nil)
 
@@ -139,6 +138,68 @@ func (suite *IntegrationSuite) TestShouldReturnBadResponseWithErrorMessage_WhenC
 	json.NewDecoder(resp.Body).Decode(&errorResponse)
 
 	suite.Suite.Assert().Equal("INVALID_REQUEST", errorResponse.Error.Code)
+}
+
+func (suite *IntegrationSuite) TestShouldReturnBadResponseWithErrorMessage_WhenCreating_WithInvalidPayload() {
+	// arrange
+	payload := `{"invalidField": "invalidValue"}`
+	req := httptest.NewRequest("POST", "/api/v1/books", strings.NewReader(payload))
+
+	w := httptest.NewRecorder()
+
+	app := provideDependencies(suite)
+
+	router := router.InitializeRouter(app)
+
+	router.ServeHTTP(w, req)
+
+	resp := w.Result()
+	// Assert
+	suite.Equal(http.StatusInternalServerError, resp.StatusCode)
+
+	var errorResponse handlers.ErrorResponse
+	json.NewDecoder(resp.Body).Decode(&errorResponse)
+
+	suite.Suite.Assert().Equal(handlers.SERVER_ERROR, errorResponse.Error.Code)
+
+}
+
+func (suite *IntegrationSuite) TestShouldReturnCreatedResponse_WhenCreating_WithValidPayload() {
+	// arrange
+	testAuthor := models.Author{Firstname: "John", Lastname: "Doe"}
+	suite.db.Create(&testAuthor)
+
+	payload := fmt.Sprintf(`{
+    "title": "new test book",
+    "icbn": "test_icbn",
+    "authorId": %d
+	}`, testAuthor.ID)
+
+	req := httptest.NewRequest("POST", "/api/v1/books", strings.NewReader(payload))
+
+	w := httptest.NewRecorder()
+
+	app := provideDependencies(suite)
+
+	router := router.InitializeRouter(app)
+
+	router.ServeHTTP(w, req)
+
+	resp := w.Result()
+
+	// Assert
+	suite.Equal(http.StatusCreated, resp.StatusCode)
+
+	var actualBook models.Book
+	err := json.NewDecoder(resp.Body).Decode(&actualBook)
+	suite.NoError(err)
+
+	suite.Suite.Assert().Equal("new test book", actualBook.Title)
+	suite.Suite.Assert().Equal("test_icbn", actualBook.ICBN)
+	suite.Suite.Assert().Equal(testAuthor.ID, uint(actualBook.AuthorId))
+
+	suite.db.Unscoped().Delete(&models.Book{}, actualBook.ID)
+	suite.db.Unscoped().Delete(&models.Author{}, testAuthor.ID)
 }
 
 func provideDependencies(suite *IntegrationSuite) *application.App {

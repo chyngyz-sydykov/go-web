@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/chyngyz-sydykov/go-web/db/models"
 	"github.com/chyngyz-sydykov/go-web/internal/book"
@@ -12,6 +13,14 @@ import (
 type BookHandler struct {
 	service       book.BookService
 	commonHandler CommonHandler
+}
+
+type BookResponseDto struct {
+	ID          uint   `json:"id"`
+	Title       string `json:"title"`
+	ICBN        string `json:"icbn"`
+	PublishedAt time.Time
+	authorId    uint `json:"author_id"`
 }
 
 func NewBookHandler(service book.BookService, commonHandler CommonHandler) *BookHandler {
@@ -26,7 +35,7 @@ func (handler *BookHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 		handler.commonHandler.HandleError(w, err, http.StatusInternalServerError,
 			ErrorResponse{
 				Error: ErrorDetail{
-					Code:    "SERVER_ERROR",
+					Code:    SERVER_ERROR,
 					Message: "server error",
 				},
 			})
@@ -42,7 +51,7 @@ func (handler *BookHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		handler.commonHandler.HandleError(w, err, http.StatusBadRequest,
 			ErrorResponse{
 				Error: ErrorDetail{
-					Code:    "INVALID_REQUEST",
+					Code:    INVALID_REQUEST,
 					Message: "invalid book id",
 				},
 			})
@@ -54,7 +63,7 @@ func (handler *BookHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		handler.commonHandler.HandleError(w, err, http.StatusNotFound,
 			ErrorResponse{
 				Error: ErrorDetail{
-					Code:    "RESOURCE_NOT_FOUND",
+					Code:    RESOURCE_NOT_FOUND,
 					Message: "Book with specified id is not found.",
 				},
 			})
@@ -70,15 +79,25 @@ func (handler *BookHandler) Create(w http.ResponseWriter, r *http.Request) {
 		handler.commonHandler.HandleError(w, err, http.StatusBadRequest,
 			ErrorResponse{
 				Error: ErrorDetail{
-					Code:    "INVALID_REQUEST",
+					Code:    INVALID_REQUEST,
 					Message: "provided book payload is invalid.",
 				},
 			})
 		return
 	}
-	if err := handler.service.Create(book); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	if err := handler.service.Create(&book); err != nil {
+
+		handler.commonHandler.HandleError(w, err, http.StatusInternalServerError,
+			ErrorResponse{
+				Error: ErrorDetail{
+					Code:    SERVER_ERROR,
+					Message: "payload is corrupted.",
+				},
+			})
 		return
 	}
+
 	w.WriteHeader(http.StatusCreated)
+	w.Header().Set("Location", "api/v1/books/"+strconv.Itoa(int(book.ID)))
+	json.NewEncoder(w).Encode(book)
 }

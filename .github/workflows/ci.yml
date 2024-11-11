@@ -33,4 +33,4 @@ jobs:
         ROOT_DIR: /home/runner/work/go-web/go-web
         DB_HOST: localhost
       run: |
-        go test ./tests
+        go test -v ./tests

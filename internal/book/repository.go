@@ -10,6 +10,7 @@ type BookRepositoryInterface interface {
 	GetAll() ([]models.Book, error)
 	GetByID(id int) (models.Book, error)
 	Create(book models.Book) error
+	Update(book *models.Book, payload models.Book) error
 }
 
 type BookRepository struct {
@@ -28,7 +29,7 @@ func (repository *BookRepository) GetAll() ([]models.Book, error) {
 	return books, nil
 }
 
-func (repository *BookRepository) GetByID(id int) (models.Book, error) {
+func (repository *BookRepository) GetByID(id uint) (models.Book, error) {
 	var book models.Book
 	if err := repository.db.First(&book, id).Error; err != nil {
 		return book, err
@@ -38,4 +39,11 @@ func (repository *BookRepository) GetByID(id int) (models.Book, error) {
 
 func (repository *BookRepository) Create(book *models.Book) error {
 	return repository.db.Create(&book).Error
+}
+
+func (repository *BookRepository) Update(book *models.Book, payload models.Book) error {
+	if err := repository.db.Model(&book).Updates(payload).Error; err != nil {
+		return err
+	}
+	return nil
 }

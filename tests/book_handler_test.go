@@ -18,7 +18,7 @@ import (
 	"github.com/chyngyz-sydykov/go-web/router"
 )
 
-func (suite *IntegrationSuite) TestShouldReturnSuccessResponseAndAllBooks_WhenCallingGetAllEndpoint() {
+func (suite *IntegrationSuite) TestGetAllEndpoint_ShouldReturnSuccessResponseAndAllBooks() {
 	// arrange
 	publishedAt := time.Now()
 	expectedBookModel := models.Book{Title: "John Doe", ICBN: "sdlfjskdflsdf234", PublishedAt: &publishedAt}
@@ -45,7 +45,7 @@ func (suite *IntegrationSuite) TestShouldReturnSuccessResponseAndAllBooks_WhenCa
 	suite.db.Unscoped().Delete(&models.Book{}, expectedBookModel.ID)
 }
 
-func (suite *IntegrationSuite) TestShouldReturnSuccessResponseAndReturnSingleBook_WhenCallingGetByIdEndpoint() {
+func (suite *IntegrationSuite) TestGetByIdEndpoint_ShouldReturnSuccessResponseAndReturnSingleBook() {
 	// arrange
 	publishedAt := time.Now()
 	expectedBookModel := models.Book{Title: "John Doe", ICBN: "sdlfjskdflsdf234", PublishedAt: &publishedAt}
@@ -75,7 +75,7 @@ func (suite *IntegrationSuite) TestShouldReturnSuccessResponseAndReturnSingleBoo
 	suite.db.Unscoped().Delete(&models.Book{}, expectedBookModel.ID)
 }
 
-func (suite *IntegrationSuite) TestShouldReturnNotFoundResponseWithErrorMessage_WhenCallingGetByIdEndpoint_WithNotExistingBookId() {
+func (suite *IntegrationSuite) TestGetByIdEndpoint_ShouldReturnNotFoundResponseWithErrorMessage_WithNotExistingBookId() {
 	// arrange
 	req := httptest.NewRequest("GET", "/api/v1/books/999", nil)
 
@@ -96,7 +96,7 @@ func (suite *IntegrationSuite) TestShouldReturnNotFoundResponseWithErrorMessage_
 
 	suite.Suite.Assert().Equal("RESOURCE_NOT_FOUND", errorResponse.Error.Code)
 }
-func (suite *IntegrationSuite) TestShouldReturnBadResponseWithErrorMessage_WhenCallingGetByIdEndpoint_WithInvalidBookId() {
+func (suite *IntegrationSuite) TestGetByIdEndpoint_ShouldReturnBadResponseWithErrorMessage_WithInvalidBookId() {
 	// arrange
 	req := httptest.NewRequest("GET", "/api/v1/books/invalidId", nil)
 
@@ -118,7 +118,7 @@ func (suite *IntegrationSuite) TestShouldReturnBadResponseWithErrorMessage_WhenC
 	suite.Suite.Assert().Equal("INVALID_REQUEST", errorResponse.Error.Code)
 }
 
-func (suite *IntegrationSuite) TestShouldReturnBadResponseWithErrorMessage_WhenCreating_WithEmptyPayload() {
+func (suite *IntegrationSuite) TestCreateEndpoint_ShouldReturnBadResponseWithErrorMessage_WithEmptyPayload() {
 	// arrange
 	req := httptest.NewRequest("POST", "/api/v1/books", nil)
 
@@ -140,7 +140,7 @@ func (suite *IntegrationSuite) TestShouldReturnBadResponseWithErrorMessage_WhenC
 	suite.Suite.Assert().Equal("INVALID_REQUEST", errorResponse.Error.Code)
 }
 
-func (suite *IntegrationSuite) TestShouldReturnBadResponseWithErrorMessage_WhenCreating_WithInvalidPayload() {
+func (suite *IntegrationSuite) TestCreateEndpoint_ShouldReturnBadResponseWithErrorMessage_WithInvalidPayload() {
 	// arrange
 	payload := `{"invalidField": "invalidValue"}`
 	req := httptest.NewRequest("POST", "/api/v1/books", strings.NewReader(payload))
@@ -164,7 +164,7 @@ func (suite *IntegrationSuite) TestShouldReturnBadResponseWithErrorMessage_WhenC
 
 }
 
-func (suite *IntegrationSuite) TestShouldReturnCreatedResponse_WhenCreating_WithValidPayload() {
+func (suite *IntegrationSuite) TestCreateEndpoint_ShouldReturnCreatedResponse_WithValidPayload() {
 	// arrange
 	testAuthor := models.Author{Firstname: "John", Lastname: "Doe"}
 	suite.db.Create(&testAuthor)
@@ -200,6 +200,122 @@ func (suite *IntegrationSuite) TestShouldReturnCreatedResponse_WhenCreating_With
 
 	suite.db.Unscoped().Delete(&models.Book{}, actualBook.ID)
 	suite.db.Unscoped().Delete(&models.Author{}, testAuthor.ID)
+}
+
+func (suite *IntegrationSuite) TestUpdateEndpoint_ShouldReturnBadResponseWithErrorMessage_WithInvalidBookId() {
+	// arrange
+	req := httptest.NewRequest("PUT", "/api/v1/books/invalidId", nil)
+
+	w := httptest.NewRecorder()
+
+	app := provideDependencies(suite)
+
+	router := router.InitializeRouter(app)
+
+	router.ServeHTTP(w, req)
+
+	resp := w.Result()
+	// Assert
+	suite.Equal(http.StatusBadRequest, resp.StatusCode)
+
+	var errorResponse handlers.ErrorResponse
+	json.NewDecoder(resp.Body).Decode(&errorResponse)
+
+	suite.Suite.Assert().Equal(handlers.INVALID_REQUEST, errorResponse.Error.Code)
+}
+func (suite *IntegrationSuite) TestUpdateEndpoint_ShouldReturnBadResponseWithErrorMessage_WithNotExistingBookIdAndEmptyPayload() {
+	// arrange
+	req := httptest.NewRequest("PUT", "/api/v1/books/999", nil)
+
+	w := httptest.NewRecorder()
+
+	app := provideDependencies(suite)
+
+	router := router.InitializeRouter(app)
+
+	router.ServeHTTP(w, req)
+
+	resp := w.Result()
+	// Assert
+	suite.Equal(http.StatusBadRequest, resp.StatusCode)
+
+	var errorResponse handlers.ErrorResponse
+	json.NewDecoder(resp.Body).Decode(&errorResponse)
+
+	suite.Suite.Assert().Equal(handlers.INVALID_REQUEST, errorResponse.Error.Code)
+}
+
+func (suite *IntegrationSuite) TestUpdateEndpoint_ShouldReturnServerErrorResponseWithErrorMessage_WithNotExistingBookIdAndValidPayload() {
+	// arrange
+	payload := fmt.Sprintf(`{
+    "title": "update test book",
+    "icbn": "test_icbn",
+    "authorId": %d
+	}`, 25)
+
+	req := httptest.NewRequest("PUT", "/api/v1/books/999", strings.NewReader(payload))
+
+	w := httptest.NewRecorder()
+
+	app := provideDependencies(suite)
+
+	router := router.InitializeRouter(app)
+
+	router.ServeHTTP(w, req)
+
+	resp := w.Result()
+	// Assert
+	suite.Equal(http.StatusInternalServerError, resp.StatusCode)
+
+	var errorResponse handlers.ErrorResponse
+	json.NewDecoder(resp.Body).Decode(&errorResponse)
+
+	suite.Suite.Assert().Equal(handlers.SERVER_ERROR, errorResponse.Error.Code)
+}
+
+func (suite *IntegrationSuite) TestUpdateEndpoint_ShouldReturnOkResponseWithBody_WithValidBookIdAndValidPayload() {
+	// arrange
+	testAuthor := models.Author{Firstname: "John", Lastname: "Doe"}
+	suite.db.Create(&testAuthor)
+
+	testAuthor2 := models.Author{Firstname: "John", Lastname: "Simpson"}
+	suite.db.Create(&testAuthor2)
+
+	publishedAt := time.Now()
+	testBook := models.Book{Title: "test book", ICBN: "123423ASDF", PublishedAt: &publishedAt, AuthorId: int64(testAuthor.ID)}
+	suite.db.Create(&testBook)
+
+	payload := fmt.Sprintf(`{
+    "title": "update test book",
+    "icbn": "updated_test_icbn",
+    "authorId": %d
+}`, testAuthor2.ID)
+
+	req := httptest.NewRequest("PUT", "/api/v1/books/"+strconv.Itoa(int(testBook.ID)), strings.NewReader(payload))
+
+	w := httptest.NewRecorder()
+
+	app := provideDependencies(suite)
+	router := router.InitializeRouter(app)
+
+	router.ServeHTTP(w, req)
+
+	resp := w.Result()
+
+	// Assert
+	suite.Equal(http.StatusOK, resp.StatusCode)
+
+	var actualBook models.Book
+	err := json.NewDecoder(resp.Body).Decode(&actualBook)
+	suite.NoError(err)
+
+	suite.Suite.Assert().Equal("update test book", actualBook.Title)
+	suite.Suite.Assert().Equal("updated_test_icbn", actualBook.ICBN)
+	suite.Suite.Assert().Equal(testAuthor2.ID, uint(actualBook.AuthorId))
+
+	suite.db.Unscoped().Delete(&models.Book{}, actualBook.ID)
+	suite.db.Unscoped().Delete(&models.Author{}, testAuthor.ID)
+	suite.db.Unscoped().Delete(&models.Author{}, testAuthor2.ID)
 }
 
 func provideDependencies(suite *IntegrationSuite) *application.App {

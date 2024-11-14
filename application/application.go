@@ -1,9 +1,13 @@
 package application
 
 import (
-	"github.com/chyngyz-sydykov/go-web/handlers"
+	"log"
+
+	"github.com/chyngyz-sydykov/go-web/application/handlers"
+	"github.com/chyngyz-sydykov/go-web/infrastructure/config"
+	"github.com/chyngyz-sydykov/go-web/infrastructure/db"
+	"github.com/chyngyz-sydykov/go-web/infrastructure/logger"
 	"github.com/chyngyz-sydykov/go-web/internal/book"
-	"github.com/chyngyz-sydykov/go-web/logger"
 	"gorm.io/gorm"
 )
 
@@ -11,7 +15,9 @@ type App struct {
 	BookHandler handlers.BookHandler
 }
 
-func InitializeApplication(db *gorm.DB) *App {
+func InitializeApplication() *App {
+	db := initializeDatabase()
+
 	logger := logger.NewLogger()
 
 	commonHandler := handlers.NewCommonHandler(logger)
@@ -23,4 +29,18 @@ func InitializeApplication(db *gorm.DB) *App {
 		BookHandler: *bookHandler,
 	}
 	return app
+}
+
+func initializeDatabase() *gorm.DB {
+	dbConfig, err := config.LoadDBConfig()
+	if err != nil {
+		log.Fatalf("Could not load database config: %v", err)
+	}
+	dbInstance, err := db.InitializeDatabase(dbConfig)
+	if err != nil {
+		log.Fatalf("Coult not initialize db connection %v", err)
+	}
+	db.Migrate()
+	return dbInstance
+
 }

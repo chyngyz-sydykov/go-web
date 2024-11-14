@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/chyngyz-sydykov/go-web/logger"
+	"github.com/chyngyz-sydykov/go-web/infrastructure/logger"
 )
 
 type AppHandlerInterface interface {

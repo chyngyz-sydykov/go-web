@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/chyngyz-sydykov/go-web/config"
-	"github.com/chyngyz-sydykov/go-web/db/models"
+	"github.com/chyngyz-sydykov/go-web/infrastructure/config"
+	"github.com/chyngyz-sydykov/go-web/infrastructure/db/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )

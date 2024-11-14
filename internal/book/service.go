@@ -1,8 +1,8 @@
 package book
 
 import (
-	"github.com/chyngyz-sydykov/go-web/db/models"
 	my_error "github.com/chyngyz-sydykov/go-web/error"
+	"github.com/chyngyz-sydykov/go-web/infrastructure/db/models"
 
 	"gorm.io/gorm"
 )

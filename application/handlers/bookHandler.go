@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/chyngyz-sydykov/go-web/db/models"
 	my_error "github.com/chyngyz-sydykov/go-web/error"
+	"github.com/chyngyz-sydykov/go-web/infrastructure/db/models"
 	"github.com/chyngyz-sydykov/go-web/internal/book"
 )
 

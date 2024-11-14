@@ -11,11 +11,11 @@ import (
 	"time"
 
 	"github.com/chyngyz-sydykov/go-web/application"
-	"github.com/chyngyz-sydykov/go-web/db/models"
-	"github.com/chyngyz-sydykov/go-web/handlers"
+	"github.com/chyngyz-sydykov/go-web/application/handlers"
+	"github.com/chyngyz-sydykov/go-web/application/router"
+	"github.com/chyngyz-sydykov/go-web/infrastructure/db/models"
+	"github.com/chyngyz-sydykov/go-web/infrastructure/logger"
 	"github.com/chyngyz-sydykov/go-web/internal/book"
-	"github.com/chyngyz-sydykov/go-web/logger"
-	"github.com/chyngyz-sydykov/go-web/router"
 )
 
 func (suite *IntegrationSuite) TestGetAllEndpoint_ShouldReturnSuccessResponseAndAllBooks() {

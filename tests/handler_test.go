@@ -4,8 +4,8 @@ import (
 	"log"
 	"testing"
 
-	"github.com/chyngyz-sydykov/go-web/config"
-	"github.com/chyngyz-sydykov/go-web/db"
+	"github.com/chyngyz-sydykov/go-web/infrastructure/config"
+	"github.com/chyngyz-sydykov/go-web/infrastructure/db"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 )

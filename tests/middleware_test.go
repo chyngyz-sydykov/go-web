@@ -6,14 +6,13 @@ import (
 	"testing"
 
 	"github.com/chyngyz-sydykov/go-web/application"
-	"github.com/chyngyz-sydykov/go-web/middleware"
-	"github.com/chyngyz-sydykov/go-web/router"
+	"github.com/chyngyz-sydykov/go-web/application/middleware"
+	"github.com/chyngyz-sydykov/go-web/application/router"
 	"github.com/stretchr/testify/assert"
 )
 
 func TesstIsContentTypeSetToResponseHeader(t *testing.T) {
-	db := initializeDatabase()
-	app := application.InitializeApplication(db)
+	app := application.InitializeApplication()
 	router := router.InitializeRouter(app)
 
 	// middlewareController := middleware.NewMiddlewareController()

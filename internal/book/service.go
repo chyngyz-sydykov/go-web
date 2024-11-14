@@ -1,9 +1,8 @@
 package book
 
 import (
-	"fmt"
-
 	"github.com/chyngyz-sydykov/go-web/db/models"
+	my_error "github.com/chyngyz-sydykov/go-web/error"
 
 	"gorm.io/gorm"
 )
@@ -40,14 +39,10 @@ func (service *BookService) Update(id uint, payload models.Book) (*models.Book, 
 	var book models.Book
 
 	// Find the book by ID
-	fmt.Println("salam1")
 	book, err := service.repository.GetByID(id)
 	if err != nil {
-		fmt.Println("salam2")
-		return nil, err
+		return nil, my_error.ErrNotFound
 	}
-
-	fmt.Println("salam3")
 
 	// Update the book with the payload fields
 	err = service.repository.Update(&book, payload)
@@ -56,4 +51,22 @@ func (service *BookService) Update(id uint, payload models.Book) (*models.Book, 
 	}
 
 	return &book, nil
+}
+
+func (service *BookService) Delete(id uint) error {
+	var book models.Book
+
+	// Find the book by ID
+	book, err := service.repository.GetByID(id)
+	if err != nil {
+		return my_error.ErrNotFound
+	}
+
+	// Update the book with the payload fields
+	err = service.repository.Delete(&book)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

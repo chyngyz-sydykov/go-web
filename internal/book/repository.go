@@ -47,3 +47,10 @@ func (repository *BookRepository) Update(book *models.Book, payload models.Book)
 	}
 	return nil
 }
+
+func (repository *BookRepository) Delete(book *models.Book) error {
+	if err := repository.db.Unscoped().Delete(&models.Book{}, book.ID).Error; err != nil {
+		return err
+	}
+	return nil
+}

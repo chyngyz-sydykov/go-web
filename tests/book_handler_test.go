@@ -166,7 +166,7 @@ func (suite *IntegrationSuite) TestCreateEndpoint_ShouldReturnBadResponseWithErr
 
 func (suite *IntegrationSuite) TestCreateEndpoint_ShouldReturnCreatedResponse_WithValidPayload() {
 	// arrange
-	testAuthor := models.Author{Firstname: "John", Lastname: "Doe"}
+	testAuthor := models.Author{Firstname: "John", Lastname: "Create Doe"}
 	suite.db.Create(&testAuthor)
 
 	payload := fmt.Sprintf(`{
@@ -197,6 +197,9 @@ func (suite *IntegrationSuite) TestCreateEndpoint_ShouldReturnCreatedResponse_Wi
 	suite.Suite.Assert().Equal("new test book", actualBook.Title)
 	suite.Suite.Assert().Equal("test_icbn", actualBook.ICBN)
 	suite.Suite.Assert().Equal(testAuthor.ID, uint(actualBook.AuthorId))
+
+	err = suite.db.Where("title = ? and ICBN = ?", "new test book", "test_icbn").First(&models.Book{}).Error
+	suite.Suite.Assert().Nil(err)
 
 	suite.db.Unscoped().Delete(&models.Book{}, actualBook.ID)
 	suite.db.Unscoped().Delete(&models.Author{}, testAuthor.ID)
@@ -245,7 +248,7 @@ func (suite *IntegrationSuite) TestUpdateEndpoint_ShouldReturnBadResponseWithErr
 	suite.Suite.Assert().Equal(handlers.INVALID_REQUEST, errorResponse.Error.Code)
 }
 
-func (suite *IntegrationSuite) TestUpdateEndpoint_ShouldReturnServerErrorResponseWithErrorMessage_WithNotExistingBookIdAndValidPayload() {
+func (suite *IntegrationSuite) TestUpdateEndpoint_ShouldReturnNotFoundResponseWithErrorMessage_WithNotExistingBookIdAndValidPayload() {
 	// arrange
 	payload := fmt.Sprintf(`{
     "title": "update test book",
@@ -265,12 +268,12 @@ func (suite *IntegrationSuite) TestUpdateEndpoint_ShouldReturnServerErrorRespons
 
 	resp := w.Result()
 	// Assert
-	suite.Equal(http.StatusInternalServerError, resp.StatusCode)
+	suite.Equal(http.StatusNotFound, resp.StatusCode)
 
 	var errorResponse handlers.ErrorResponse
 	json.NewDecoder(resp.Body).Decode(&errorResponse)
 
-	suite.Suite.Assert().Equal(handlers.SERVER_ERROR, errorResponse.Error.Code)
+	suite.Suite.Assert().Equal(handlers.RESOURCE_NOT_FOUND, errorResponse.Error.Code)
 }
 
 func (suite *IntegrationSuite) TestUpdateEndpoint_ShouldReturnOkResponseWithBody_WithValidBookIdAndValidPayload() {
@@ -313,9 +316,85 @@ func (suite *IntegrationSuite) TestUpdateEndpoint_ShouldReturnOkResponseWithBody
 	suite.Suite.Assert().Equal("updated_test_icbn", actualBook.ICBN)
 	suite.Suite.Assert().Equal(testAuthor2.ID, uint(actualBook.AuthorId))
 
+	err = suite.db.Where("title = ? and ICBN = ?", "update test book", "updated_test_icbn").First(&models.Book{}).Error
+	suite.Suite.Assert().Nil(err)
+
 	suite.db.Unscoped().Delete(&models.Book{}, actualBook.ID)
 	suite.db.Unscoped().Delete(&models.Author{}, testAuthor.ID)
 	suite.db.Unscoped().Delete(&models.Author{}, testAuthor2.ID)
+}
+func (suite *IntegrationSuite) TestDeleteEndpoint_ShouldReturnBadResponseWithErrorMessage_WithInvalidBookId() {
+	// arrange
+	req := httptest.NewRequest("DELETE", "/api/v1/books/invalidId", nil)
+
+	w := httptest.NewRecorder()
+
+	app := provideDependencies(suite)
+
+	router := router.InitializeRouter(app)
+
+	router.ServeHTTP(w, req)
+
+	resp := w.Result()
+	// Assert
+	suite.Equal(http.StatusBadRequest, resp.StatusCode)
+
+	var errorResponse handlers.ErrorResponse
+	json.NewDecoder(resp.Body).Decode(&errorResponse)
+
+	suite.Suite.Assert().Equal(handlers.INVALID_REQUEST, errorResponse.Error.Code)
+}
+func (suite *IntegrationSuite) TestDeleteEndpoint_ShouldReturnNotFoundResponseWithErrorMessage_WithNotExistingBookId() {
+	// arrange
+	req := httptest.NewRequest("DELETE", "/api/v1/books/999", nil)
+
+	w := httptest.NewRecorder()
+
+	app := provideDependencies(suite)
+
+	router := router.InitializeRouter(app)
+
+	router.ServeHTTP(w, req)
+
+	resp := w.Result()
+	// Assert
+	suite.Equal(http.StatusNotFound, resp.StatusCode)
+
+	var errorResponse handlers.ErrorResponse
+	json.NewDecoder(resp.Body).Decode(&errorResponse)
+
+	suite.Suite.Assert().Equal("RESOURCE_NOT_FOUND", errorResponse.Error.Code)
+}
+func (suite *IntegrationSuite) TestDeleteEndpoint_ShouldReturnOkResponse_WithExistingBookId() {
+	testAuthor := models.Author{Firstname: "John", Lastname: "Delete Doe"}
+	suite.db.Create(&testAuthor)
+
+	publishedAt := time.Now()
+	testBook := models.Book{Title: "deleting book", ICBN: "123423ASDF", PublishedAt: &publishedAt, AuthorId: int64(testAuthor.ID)}
+	suite.db.Create(&testBook)
+
+	// arrange
+	req := httptest.NewRequest("DELETE", "/api/v1/books/"+strconv.Itoa(int(testBook.ID)), nil)
+
+	w := httptest.NewRecorder()
+
+	app := provideDependencies(suite)
+
+	router := router.InitializeRouter(app)
+
+	router.ServeHTTP(w, req)
+
+	resp := w.Result()
+	bodyBytes, _ := io.ReadAll(resp.Body)
+	defer resp.Body.Close()
+	// Assert
+	suite.Equal(http.StatusOK, resp.StatusCode)
+	suite.Suite.Assert().Equal("", string(bodyBytes))
+
+	err := suite.db.Where("title = ?", "deleting book").First(&models.Book{}).Error
+	suite.Suite.Assert().NotNil(err)
+
+	suite.db.Unscoped().Delete(&models.Author{}, testAuthor.ID)
 }
 
 func provideDependencies(suite *IntegrationSuite) *application.App {

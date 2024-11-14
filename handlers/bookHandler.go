@@ -2,11 +2,13 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/chyngyz-sydykov/go-web/db/models"
+	my_error "github.com/chyngyz-sydykov/go-web/error"
 	"github.com/chyngyz-sydykov/go-web/internal/book"
 )
 
@@ -132,16 +134,68 @@ func (handler *BookHandler) Update(w http.ResponseWriter, r *http.Request) {
 	var updatedBook *models.Book
 	updatedBook, err = handler.service.Update(uint(bookId), payload)
 	if err != nil {
-		handler.commonHandler.HandleError(w, err, http.StatusInternalServerError,
-			ErrorResponse{
-				Error: ErrorDetail{
-					Code:    SERVER_ERROR,
-					Message: "Couldn't update payload.",
-				},
-			})
+		if errors.Is(err, my_error.ErrNotFound) {
+			handler.commonHandler.HandleError(w, err, http.StatusNotFound,
+				ErrorResponse{
+					Error: ErrorDetail{
+						Code:    RESOURCE_NOT_FOUND,
+						Message: "Book with specified id is not found.",
+					},
+				})
+			return
+		} else {
+			handler.commonHandler.HandleError(w, err, http.StatusInternalServerError,
+				ErrorResponse{
+					Error: ErrorDetail{
+						Code:    SERVER_ERROR,
+						Message: "Couldn't update payload.",
+					},
+				})
+		}
 		return
 	}
 	w.Header().Set("Location", "api/v1/books/"+strconv.Itoa(int(bookId)))
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(updatedBook)
+}
+
+func (handler *BookHandler) Delete(w http.ResponseWriter, r *http.Request) {
+
+	bookId, err := strconv.ParseUint(r.PathValue("bookId"), 10, 64)
+
+	if err != nil {
+		handler.commonHandler.HandleError(w, err, http.StatusBadRequest,
+			ErrorResponse{
+				Error: ErrorDetail{
+					Code:    INVALID_REQUEST,
+					Message: "invalid book id",
+				},
+			})
+		return
+	}
+	err = handler.service.Delete(uint(bookId))
+
+	if err != nil {
+		if errors.Is(err, my_error.ErrNotFound) {
+			handler.commonHandler.HandleError(w, err, http.StatusNotFound,
+				ErrorResponse{
+					Error: ErrorDetail{
+						Code:    RESOURCE_NOT_FOUND,
+						Message: "Book with specified id is not found.",
+					},
+				})
+			return
+		} else {
+			handler.commonHandler.HandleError(w, err, http.StatusInternalServerError,
+				ErrorResponse{
+					Error: ErrorDetail{
+						Code:    SERVER_ERROR,
+						Message: "Couldn't update payload.",
+					},
+				})
+			return
+		}
+
+	}
+	w.WriteHeader(http.StatusOK)
 }

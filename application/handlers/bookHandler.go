@@ -30,7 +30,6 @@ func NewBookHandler(service book.BookService, commonHandler CommonHandler) *Book
 }
 
 func (handler *BookHandler) GetAll(w http.ResponseWriter, r *http.Request) {
-
 	books, err := handler.service.GetAll()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -62,13 +61,19 @@ func (handler *BookHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 
 	book, err := handler.service.GetByID(uint(bookId))
 	if err != nil {
-		handler.commonHandler.HandleError(w, err, http.StatusNotFound,
-			ErrorResponse{
-				Error: ErrorDetail{
-					Code:    RESOURCE_NOT_FOUND,
-					Message: "Book with specified id is not found.",
-				},
-			})
+		if errors.Is(err, my_error.ErrgRpcServerDown) {
+			handler.commonHandler.LogError(err, http.StatusServiceUnavailable)
+			json.NewEncoder(w).Encode(book)
+			return
+		} else {
+			handler.commonHandler.HandleError(w, err, http.StatusNotFound,
+				ErrorResponse{
+					Error: ErrorDetail{
+						Code:    RESOURCE_NOT_FOUND,
+						Message: "Book with specified id is not found.",
+					},
+				})
+		}
 		return
 	}
 	json.NewEncoder(w).Encode(book)

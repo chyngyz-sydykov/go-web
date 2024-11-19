@@ -13,9 +13,12 @@ import (
 	"github.com/chyngyz-sydykov/go-web/application"
 	"github.com/chyngyz-sydykov/go-web/application/handlers"
 	"github.com/chyngyz-sydykov/go-web/application/router"
+	my_error "github.com/chyngyz-sydykov/go-web/error"
 	"github.com/chyngyz-sydykov/go-web/infrastructure/db/models"
 	"github.com/chyngyz-sydykov/go-web/infrastructure/logger"
 	"github.com/chyngyz-sydykov/go-web/internal/book"
+	pb "github.com/chyngyz-sydykov/go-web/proto/rating"
+	"github.com/stretchr/testify/mock"
 )
 
 func (suite *IntegrationSuite) TestGetAllEndpoint_ShouldReturnSuccessResponseAndAllBooks() {
@@ -55,7 +58,7 @@ func (suite *IntegrationSuite) TestGetByIdEndpoint_ShouldReturnSuccessResponseAn
 
 	w := httptest.NewRecorder()
 
-	app := provideDependencies(suite)
+	app := provideDependenciesWithMockRating(suite, expectedBookModel.ID)
 
 	router := router.InitializeRouter(app)
 
@@ -397,14 +400,50 @@ func (suite *IntegrationSuite) TestDeleteEndpoint_ShouldReturnOkResponse_WithExi
 	suite.db.Unscoped().Delete(&models.Author{}, testAuthor.ID)
 }
 
-func provideDependencies(suite *IntegrationSuite) *application.App {
+func provideDependenciesWithMockRating(suite *IntegrationSuite, bookid uint) *application.App {
 	logger := logger.NewLogger()
 	commonHandler := handlers.NewCommonHandler(logger)
-	bookService := book.NewBookService(suite.db)
+
+	var ratingServiceMock RatingServiceMock
+	ratingServiceMock.On("GetByBookId", bookid).Return(nil, my_error.ErrgRpcServerDown)
+
+	bookService := book.NewBookService(suite.db, &ratingServiceMock)
 	bookHandler := handlers.NewBookHandler(*bookService, *commonHandler)
 
 	app := &application.App{
 		BookHandler: *bookHandler,
 	}
 	return app
+}
+
+func provideDependencies(suite *IntegrationSuite) *application.App {
+	logger := logger.NewLogger()
+	commonHandler := handlers.NewCommonHandler(logger)
+
+	var ratingServiceMock RatingServiceMock
+	ratingServiceMock.On("GetByBookId", uint(6)).Return(nil, my_error.ErrgRpcServerDown)
+
+	bookService := book.NewBookService(suite.db, &ratingServiceMock)
+	bookHandler := handlers.NewBookHandler(*bookService, *commonHandler)
+
+	app := &application.App{
+		BookHandler: *bookHandler,
+	}
+	return app
+}
+
+type RatingServiceMock struct {
+	mock.Mock
+}
+
+func newRatingServiceMock() *RatingServiceMock {
+	return &RatingServiceMock{}
+}
+
+func (m *RatingServiceMock) GetByBookId(bookId uint) ([]*pb.Rating, error) {
+	args := m.Called(bookId)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).([]*pb.Rating), args.Error(1)
 }

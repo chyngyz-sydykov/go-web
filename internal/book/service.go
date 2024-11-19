@@ -3,6 +3,7 @@ package book
 import (
 	my_error "github.com/chyngyz-sydykov/go-web/error"
 	"github.com/chyngyz-sydykov/go-web/infrastructure/db/models"
+	"github.com/chyngyz-sydykov/go-web/internal/rating"
 
 	"gorm.io/gorm"
 )
@@ -15,12 +16,16 @@ type BookServiceInterface interface {
 }
 
 type BookService struct {
-	repository BookRepository
+	repository    BookRepository
+	ratingService rating.RatingServiceInterface
 }
 
-func NewBookService(db *gorm.DB) *BookService {
+func NewBookService(db *gorm.DB, ratingService rating.RatingServiceInterface) *BookService {
 	repository := NewBookRepository(db)
-	return &BookService{repository: *repository}
+	return &BookService{
+		repository:    *repository,
+		ratingService: ratingService,
+	}
 }
 
 func (service *BookService) GetAll() ([]models.Book, error) {
@@ -28,7 +33,15 @@ func (service *BookService) GetAll() ([]models.Book, error) {
 }
 
 func (service *BookService) GetByID(id uint) (models.Book, error) {
-	return service.repository.GetByID(id)
+	book, err := service.repository.GetByID(id)
+	if err != nil {
+		return book, err
+	}
+	_, err = service.ratingService.GetByBookId(id)
+	if err != nil {
+		return book, err
+	}
+	return book, err
 }
 
 func (service *BookService) Create(book *models.Book) error {

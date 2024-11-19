@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
@@ -11,6 +12,8 @@ type Config struct {
 	ApplicationAddress     string
 	ApplicationPort        string
 	ApplicationEnvironment string
+	RatingServicePort      string
+	GrpcTimeoutDuration    int
 }
 
 type DBConfig struct {
@@ -31,6 +34,8 @@ func LoadConfig() (*Config, error) {
 		ApplicationAddress:     getEnv("APPLICATION_ADDRESS", "/"),
 		ApplicationPort:        getEnv("APPLICATION_PORT", "1111"),
 		ApplicationEnvironment: getEnv("APPLICATION_ENVIRONMENT", "local"),
+		RatingServicePort:      getEnv("RATING_SERVICE_PORT", "1112"),
+		GrpcTimeoutDuration:    getIntEnv("GRPC_TIMEOUT_DURATION", 30),
 	}
 
 	return config, nil
@@ -67,6 +72,17 @@ func loadEnvFile() error {
 func getEnv(key, defaultValue string) string {
 	if value, exists := os.LookupEnv(key); exists {
 		return value
+	}
+	return defaultValue
+}
+func getIntEnv(key string, defaultValue int) int {
+	if value, exists := os.LookupEnv(key); exists {
+		number, err := strconv.Atoi(value)
+		if err != nil {
+			fmt.Errorf("error cannot convert string %s to int. Returning default value", value)
+			return defaultValue
+		}
+		return number
 	}
 	return defaultValue
 }

@@ -11,7 +11,7 @@ import (
 )
 
 type RatingServiceInterface interface {
-	GetByBookId(bookId uint) ([]*pb.Rating, error)
+	GetByBookId(bookId uint) (*[]RatingDTO, error)
 	//Create(rating any) error
 }
 
@@ -25,7 +25,7 @@ func NewRatingService(client pb.RatingServiceClient, timeout time.Duration) *Rat
 	return &RatingService{client: client, timeout: timeout}
 }
 
-func (service *RatingService) GetByBookId(bookId uint) ([]*pb.Rating, error) {
+func (service *RatingService) GetByBookId(bookId uint) (*[]RatingDTO, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), service.timeout)
 	defer cancel()
 
@@ -39,10 +39,26 @@ func (service *RatingService) GetByBookId(bookId uint) ([]*pb.Rating, error) {
 	}
 
 	log.Printf("Rating returned successfully: %v", response.Ratings)
-	return response.Ratings, nil
+	ratingDto := service.mapProtoBuffRatingToRatingDTO(response.Ratings)
+	return ratingDto, nil
 }
 
 // func (service *RatingService) Create(rating any) error {
 // 	//return service.repository.Create(book)
 // 	return my_error.ErrNotFound
 // }
+
+func (s *RatingService) mapProtoBuffRatingToRatingDTO(ratings []*pb.Rating) *[]RatingDTO {
+	mapped := make([]RatingDTO, len(ratings))
+
+	for i, r := range ratings {
+		mapped[i] = RatingDTO{
+			RatingID: r.GetRatingId(),
+			BookID:   r.GetBookId(),
+			Rating:   r.GetRating(),
+			Comment:  r.GetComment(),
+		}
+	}
+
+	return &mapped
+}

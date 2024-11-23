@@ -17,7 +17,7 @@ import (
 	"github.com/chyngyz-sydykov/go-web/infrastructure/db/models"
 	"github.com/chyngyz-sydykov/go-web/infrastructure/logger"
 	"github.com/chyngyz-sydykov/go-web/internal/book"
-	pb "github.com/chyngyz-sydykov/go-web/proto/rating"
+	"github.com/chyngyz-sydykov/go-web/internal/rating"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -58,7 +58,7 @@ func (suite *IntegrationSuite) TestGetByIdEndpoint_ShouldReturnSuccessResponseAn
 
 	w := httptest.NewRecorder()
 
-	app := provideDependenciesWithMockRating(suite, expectedBookModel.ID)
+	app, mockLogger := provideDependenciesWithMockRating(suite, expectedBookModel.ID)
 
 	router := router.InitializeRouter(app)
 
@@ -68,7 +68,10 @@ func (suite *IntegrationSuite) TestGetByIdEndpoint_ShouldReturnSuccessResponseAn
 	// Assert
 	suite.Equal(http.StatusOK, resp.StatusCode)
 
+	mockLogger.AssertCalled(suite.T(), "LogError", http.StatusServiceUnavailable, my_error.ErrgRpcServerDown)
+
 	var resultBook models.Book
+
 	err := json.NewDecoder(resp.Body).Decode(&resultBook)
 	suite.NoError(err)
 
@@ -400,9 +403,15 @@ func (suite *IntegrationSuite) TestDeleteEndpoint_ShouldReturnOkResponse_WithExi
 	suite.db.Unscoped().Delete(&models.Author{}, testAuthor.ID)
 }
 
-func provideDependenciesWithMockRating(suite *IntegrationSuite, bookid uint) *application.App {
-	logger := logger.NewLogger()
-	commonHandler := handlers.NewCommonHandler(logger)
+func provideDependenciesWithMockRating(suite *IntegrationSuite, bookid uint) (*application.App, *MockLogger) {
+	//logger := logger.NewLogger()
+
+	mockLogger := new(MockLogger)
+
+	// Set up the expectation for LogError
+	mockLogger.On("LogError", 503, my_error.ErrgRpcServerDown).Return()
+
+	commonHandler := handlers.NewCommonHandler(mockLogger)
 
 	var ratingServiceMock RatingServiceMock
 	ratingServiceMock.On("GetByBookId", bookid).Return(nil, my_error.ErrgRpcServerDown)
@@ -413,7 +422,7 @@ func provideDependenciesWithMockRating(suite *IntegrationSuite, bookid uint) *ap
 	app := &application.App{
 		BookHandler: *bookHandler,
 	}
-	return app
+	return app, mockLogger
 }
 
 func provideDependencies(suite *IntegrationSuite) *application.App {
@@ -432,6 +441,14 @@ func provideDependencies(suite *IntegrationSuite) *application.App {
 	return app
 }
 
+type MockLogger struct {
+	mock.Mock
+}
+
+func (m *MockLogger) LogError(statusCode int, err error) {
+	m.Called(statusCode, err)
+}
+
 type RatingServiceMock struct {
 	mock.Mock
 }
@@ -440,10 +457,10 @@ func newRatingServiceMock() *RatingServiceMock {
 	return &RatingServiceMock{}
 }
 
-func (m *RatingServiceMock) GetByBookId(bookId uint) ([]*pb.Rating, error) {
+func (m *RatingServiceMock) GetByBookId(bookId uint) (*[]rating.RatingDTO, error) {
 	args := m.Called(bookId)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).([]*pb.Rating), args.Error(1)
+	return args.Get(0).(*[]rating.RatingDTO), args.Error(1)
 }

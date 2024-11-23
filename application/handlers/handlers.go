@@ -30,7 +30,7 @@ const RESOURCE_NOT_FOUND string = "RESOURCE_NOT_FOUND"
 const SERVER_ERROR string = "SERVER_ERROR"
 const SERVICE_NOT_AVAILABLE string = "SERVICE_NOT_AVAILABLE"
 
-func NewCommonHandler(logger *logger.Logger) *CommonHandler {
+func NewCommonHandler(logger logger.LoggerInterface) *CommonHandler {
 
 	return &CommonHandler{logger: logger}
 }

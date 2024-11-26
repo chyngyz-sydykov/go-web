@@ -13,6 +13,7 @@ type Config struct {
 	ApplicationPort        string
 	ApplicationEnvironment string
 	RatingServicePort      string
+	RatingServiceServer    string
 	GrpcTimeoutDuration    int
 }
 
@@ -34,6 +35,7 @@ func LoadConfig() (*Config, error) {
 		ApplicationAddress:     getEnv("APPLICATION_ADDRESS", "/"),
 		ApplicationPort:        getEnv("APPLICATION_PORT", "1111"),
 		ApplicationEnvironment: getEnv("APPLICATION_ENVIRONMENT", "local"),
+		RatingServiceServer:    getEnv("RATING_SERVICE_SERVER", "localhost"),
 		RatingServicePort:      getEnv("RATING_SERVICE_PORT", "1112"),
 		GrpcTimeoutDuration:    getIntEnv("GRPC_TIMEOUT_DURATION", 30),
 	}

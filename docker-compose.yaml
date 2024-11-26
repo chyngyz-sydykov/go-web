@@ -12,10 +12,12 @@ services:
       - ROOT_DIR=/app
     depends_on:
       - db
+    networks:
+      default:
   db:
     image: postgres
     restart: always
-    container_name: go_postgres_db
+    container_name: go_web_postgres_db
     environment:
       POSTGRES_DB: ${DB_DATABASE}
       POSTGRES_USER: ${DB_USERNAME}
@@ -35,5 +37,11 @@ services:
         - '${DB_USERNAME}'
       retries: 3
       timeout: 5s
+    networks:
+      default:
 volumes:
   db-data:
+networks:
+  default:
+    external:
+      name: grpc-network

@@ -55,12 +55,12 @@ func initializeRatingGrpcClient() pb.RatingServiceClient {
 		log.Fatalf("Could not config: %v", err)
 	}
 
-	conn, err := grpc.NewClient("localhost:"+config.RatingServicePort, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(config.RatingServiceServer+":"+config.RatingServicePort, grpc.WithTransportCredentials(insecure.NewCredentials()))
 
 	if err != nil {
 		log.Fatalf("Failed to connect to gRPC server: %v", err)
 	}
-	defer conn.Close()
+	//defer conn.Close()
 
 	// Create the gRPC client for the RatingService.
 	ratingClient := pb.NewRatingServiceClient(conn)

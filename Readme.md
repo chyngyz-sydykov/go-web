@@ -19,6 +19,25 @@ the protobuf files are stored in different repo https://github.com/chyngyz-sydyk
 
 generate grpc files `docker exec -it go_rest_api bash -c "./generate_protoc.sh"`
 
+in order to communicate with the rate microservice on local machine, do following
+
+1. create a local network `docker network inspect grpc-network`
+2. after running `docker-compose up` run `docker network inspect grpc-network`
+You should see a json with the list of containers ex:
+```"Containers": {
+            "some_hash": {
+                "Name": "go_rating_postgres_db","
+            },
+            "some_hash": {
+                "Name": "go_rest_api",
+            },
+            "some_hash": {
+                "Name": "go_postgres_db",
+            },
+            "some_hash": {
+                "Name": "go_rating_server",
+            }
+        },```
 
 #Handy commands
 

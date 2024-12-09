@@ -1,6 +1,8 @@
 package book
 
 import (
+	"fmt"
+
 	my_error "github.com/chyngyz-sydykov/go-web/error"
 	"github.com/chyngyz-sydykov/go-web/infrastructure/db/models"
 	"github.com/chyngyz-sydykov/go-web/internal/rating"
@@ -10,7 +12,7 @@ import (
 
 type BookServiceInterface interface {
 	GetAll() ([]models.Book, error)
-	GetByID(id int) (models.Book, error)
+	GetByID(id int) (BookDTO, error)
 	Create(book *models.Book) error
 	Update(book *models.Book) error
 }
@@ -32,16 +34,16 @@ func (service *BookService) GetAll() ([]models.Book, error) {
 	return service.repository.GetAll()
 }
 
-func (service *BookService) GetByID(id uint) (models.Book, error) {
+func (service *BookService) GetByID(id uint) (BookDTO, error) {
 	book, err := service.repository.GetByID(id)
 	if err != nil {
-		return book, err
+		return BookDTO{}, err
 	}
-	_, err = service.ratingService.GetByBookId(id)
+	ratings, err := service.ratingService.GetByBookId(id)
 	if err != nil {
-		return book, err
+		return service.mapToBookingDTO(book, ratings), err
 	}
-	return book, err
+	return service.mapToBookingDTO(book, ratings), nil
 }
 
 func (service *BookService) Create(book *models.Book) error {
@@ -82,4 +84,22 @@ func (service *BookService) Delete(id uint) error {
 	}
 
 	return nil
+}
+
+func (service *BookService) mapToBookingDTO(book models.Book, ratingDTO []rating.RatingDTO) BookDTO {
+	fmt.Println("book", book.Author)
+	bookDTO := BookDTO{
+		ID:          book.ID,
+		Title:       book.Title,
+		ICBN:        book.ICBN,
+		PublishedAt: book.PublishedAt,
+		Ratings:     ratingDTO,
+		AuthorID:    int32(book.Author.ID),
+		Author: AuthorDTO{
+			ID:        book.Author.ID,
+			Firstname: book.Author.Firstname,
+			Lastname:  book.Author.Lastname,
+		},
+	}
+	return bookDTO
 }

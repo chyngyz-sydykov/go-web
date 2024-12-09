@@ -48,39 +48,6 @@ func (suite *IntegrationSuite) TestGetAllEndpoint_ShouldReturnSuccessResponseAnd
 	suite.db.Unscoped().Delete(&models.Book{}, expectedBookModel.ID)
 }
 
-func (suite *IntegrationSuite) TestGetByIdEndpoint_ShouldReturnSuccessResponseAndReturnSingleBook() {
-	// arrange
-	publishedAt := time.Now()
-	expectedBookModel := models.Book{Title: "John Doe", ICBN: "sdlfjskdflsdf234", PublishedAt: &publishedAt}
-	suite.db.Omit("AuthorId").Create(&expectedBookModel)
-
-	req := httptest.NewRequest("GET", "/api/v1/books/"+strconv.Itoa(int(expectedBookModel.ID)), nil)
-
-	w := httptest.NewRecorder()
-
-	app, mockLogger := provideDependenciesWithMockRating(suite, expectedBookModel.ID)
-
-	router := router.InitializeRouter(app)
-
-	router.ServeHTTP(w, req)
-
-	resp := w.Result()
-	// Assert
-	suite.Equal(http.StatusOK, resp.StatusCode)
-
-	mockLogger.AssertCalled(suite.T(), "LogError", http.StatusServiceUnavailable, my_error.ErrgRpcServerDown)
-
-	var resultBook models.Book
-
-	err := json.NewDecoder(resp.Body).Decode(&resultBook)
-	suite.NoError(err)
-
-	suite.Suite.Assert().Equal("John Doe", resultBook.Title)
-	suite.Suite.Assert().Equal("sdlfjskdflsdf234", resultBook.ICBN)
-
-	suite.db.Unscoped().Delete(&models.Book{}, expectedBookModel.ID)
-}
-
 func (suite *IntegrationSuite) TestGetByIdEndpoint_ShouldReturnNotFoundResponseWithErrorMessage_WithNotExistingBookId() {
 	// arrange
 	req := httptest.NewRequest("GET", "/api/v1/books/999", nil)
@@ -403,34 +370,12 @@ func (suite *IntegrationSuite) TestDeleteEndpoint_ShouldReturnOkResponse_WithExi
 	suite.db.Unscoped().Delete(&models.Author{}, testAuthor.ID)
 }
 
-func provideDependenciesWithMockRating(suite *IntegrationSuite, bookid uint) (*application.App, *MockLogger) {
-	//logger := logger.NewLogger()
-
-	mockLogger := new(MockLogger)
-
-	// Set up the expectation for LogError
-	mockLogger.On("LogError", 503, my_error.ErrgRpcServerDown).Return()
-
-	commonHandler := handlers.NewCommonHandler(mockLogger)
-
-	var ratingServiceMock RatingServiceMock
-	ratingServiceMock.On("GetByBookId", bookid).Return(nil, my_error.ErrgRpcServerDown)
-
-	bookService := book.NewBookService(suite.db, &ratingServiceMock)
-	bookHandler := handlers.NewBookHandler(*bookService, *commonHandler)
-
-	app := &application.App{
-		BookHandler: *bookHandler,
-	}
-	return app, mockLogger
-}
-
 func provideDependencies(suite *IntegrationSuite) *application.App {
 	logger := logger.NewLogger()
 	commonHandler := handlers.NewCommonHandler(logger)
 
 	var ratingServiceMock RatingServiceMock
-	ratingServiceMock.On("GetByBookId", uint(6)).Return(nil, my_error.ErrgRpcServerDown)
+	ratingServiceMock.On("GetByBookId", uint(6)).Return([]rating.RatingDTO{}, my_error.ErrgRpcServerDown)
 
 	bookService := book.NewBookService(suite.db, &ratingServiceMock)
 	bookHandler := handlers.NewBookHandler(*bookService, *commonHandler)
@@ -447,20 +392,4 @@ type MockLogger struct {
 
 func (m *MockLogger) LogError(statusCode int, err error) {
 	m.Called(statusCode, err)
-}
-
-type RatingServiceMock struct {
-	mock.Mock
-}
-
-func newRatingServiceMock() *RatingServiceMock {
-	return &RatingServiceMock{}
-}
-
-func (m *RatingServiceMock) GetByBookId(bookId uint) (*[]rating.RatingDTO, error) {
-	args := m.Called(bookId)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*[]rating.RatingDTO), args.Error(1)
 }

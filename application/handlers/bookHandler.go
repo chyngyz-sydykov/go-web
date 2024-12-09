@@ -59,7 +59,7 @@ func (handler *BookHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	book, err := handler.service.GetByID(uint(bookId))
+	book, err := handler.service.GetByID(int(bookId))
 	if err != nil {
 		if errors.Is(err, my_error.ErrgRpcServerDown) {
 			handler.commonHandler.LogError(err, http.StatusServiceUnavailable)
@@ -137,7 +137,7 @@ func (handler *BookHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var updatedBook *models.Book
-	updatedBook, err = handler.service.Update(uint(bookId), payload)
+	updatedBook, err = handler.service.Update(int(bookId), payload)
 	if err != nil {
 		if errors.Is(err, my_error.ErrNotFound) {
 			handler.commonHandler.HandleError(w, err, http.StatusNotFound,
@@ -178,7 +178,7 @@ func (handler *BookHandler) Delete(w http.ResponseWriter, r *http.Request) {
 			})
 		return
 	}
-	err = handler.service.Delete(uint(bookId))
+	err = handler.service.Delete(int(bookId))
 
 	if err != nil {
 		if errors.Is(err, my_error.ErrNotFound) {

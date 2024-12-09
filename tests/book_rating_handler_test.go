@@ -31,7 +31,7 @@ func (suite *IntegrationSuite) TestGetByIdEndpoint_ShouldReturnSuccessResponseAn
 
 	w := httptest.NewRecorder()
 
-	app, mockLogger := provideDependenciesWithMockRatingServerBeingDown(suite, expectedBookModel.ID)
+	app, mockLogger := provideDependenciesWithMockRatingServerBeingDown(suite, int(expectedBookModel.ID))
 
 	router := router.InitializeRouter(app)
 
@@ -72,7 +72,7 @@ func (suite *IntegrationSuite) TestGetByIdEndpoint_ShouldReturnSuccessResponseWi
 
 	w := httptest.NewRecorder()
 
-	app := provideDependenciesWithMockRatingServerBeingUp(suite, expectedBookModel.ID)
+	app := provideDependenciesWithMockRatingServerBeingUp(suite, int(expectedBookModel.ID))
 
 	router := router.InitializeRouter(app)
 
@@ -127,7 +127,7 @@ func (m *GrcpClientMock) GetRatings(ctx context.Context, in *pb.GetRatingsReques
 	return args.Get(0).(*pb.GetRatingsResponse), args.Error(1)
 }
 
-func (m *RatingServiceMock) GetByBookId(bookId uint) ([]rating.RatingDTO, error) {
+func (m *RatingServiceMock) GetByBookId(bookId int) ([]rating.RatingDTO, error) {
 	args := m.Called(bookId)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
@@ -135,7 +135,7 @@ func (m *RatingServiceMock) GetByBookId(bookId uint) ([]rating.RatingDTO, error)
 	return args.Get(0).([]rating.RatingDTO), args.Error(1)
 }
 
-func provideDependenciesWithMockRatingServerBeingDown(suite *IntegrationSuite, bookid uint) (*application.App, *MockLogger) {
+func provideDependenciesWithMockRatingServerBeingDown(suite *IntegrationSuite, bookid int) (*application.App, *MockLogger) {
 	mockLogger := new(MockLogger)
 
 	// Set up the expectation for LogError
@@ -155,7 +155,7 @@ func provideDependenciesWithMockRatingServerBeingDown(suite *IntegrationSuite, b
 	return app, mockLogger
 }
 
-func provideDependenciesWithMockRatingServerBeingUp(suite *IntegrationSuite, bookId uint) *application.App {
+func provideDependenciesWithMockRatingServerBeingUp(suite *IntegrationSuite, bookId int) *application.App {
 	logger := logger.NewLogger()
 	commonHandler := handlers.NewCommonHandler(logger)
 

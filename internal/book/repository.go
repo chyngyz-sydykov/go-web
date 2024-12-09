@@ -29,7 +29,7 @@ func (repository *BookRepository) GetAll() ([]models.Book, error) {
 	return books, nil
 }
 
-func (repository *BookRepository) GetByID(id uint) (models.Book, error) {
+func (repository *BookRepository) GetByID(id int) (models.Book, error) {
 	var book models.Book
 	if err := repository.db.Preload("Author").First(&book, id).Error; err != nil {
 		return book, err

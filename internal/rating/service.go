@@ -11,7 +11,7 @@ import (
 )
 
 type RatingServiceInterface interface {
-	GetByBookId(bookId uint) ([]RatingDTO, error)
+	GetByBookId(bookId int) ([]RatingDTO, error)
 	//Create(rating any) error
 }
 
@@ -25,7 +25,7 @@ func NewRatingService(client pb.RatingServiceClient, timeout time.Duration) *Rat
 	return &RatingService{client: client, timeout: timeout}
 }
 
-func (service *RatingService) GetByBookId(bookId uint) ([]RatingDTO, error) {
+func (service *RatingService) GetByBookId(bookId int) ([]RatingDTO, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), service.timeout)
 	defer cancel()
 

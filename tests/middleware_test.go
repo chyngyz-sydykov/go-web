@@ -5,39 +5,36 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/chyngyz-sydykov/go-web/application"
 	"github.com/chyngyz-sydykov/go-web/application/middleware"
-	"github.com/chyngyz-sydykov/go-web/application/router"
-	"github.com/stretchr/testify/assert"
 )
 
-func TesstIsContentTypeSetToResponseHeader(t *testing.T) {
-	app := application.InitializeApplication()
-	router := router.InitializeRouter(app)
-
-	// middlewareController := middleware.NewMiddlewareController()
-
-	// http.ListenAndServe(
-	// 	":"+config.ApplicationPort,
-	// 	middlewareController.Chain()(router))
-
+func TestIsContentTypeSetToResponseHeader(t *testing.T) {
+	// arrange
 	middlewareController := middleware.NewMiddlewareController()
-	// Create the handler with the middleware applied
-	handlerWithMiddleware := middlewareController.Chain()(router)
 
-	// Create a request to pass to the handler
-	req, err := http.NewRequest("GET", "/", nil)
-	assert.NoError(t, err)
+	finalHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("Hello, Middleware!"))
+	})
 
-	// Create a ResponseRecorder to capture the response
-	rec := httptest.NewRecorder()
+	handler := middlewareController.Chain()(finalHandler)
+	server := httptest.NewServer(handler)
+	defer server.Close()
 
-	// Call the handler with the middleware applied
-	handlerWithMiddleware.ServeHTTP(rec, req)
+	// act
+	req, err := http.NewRequest("GET", server.URL, nil)
+	if err != nil {
+		t.Fatalf("failed to create request: %v", err)
+	}
 
-	// Check if the header exists
-	headerValue := rec.Header().Get("Content-type")
-	assert.NotEmpty(t, headerValue, "Content-type should not be empty")
-	assert.Equal(t, "application/json", headerValue, "Content-type should be application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatalf("failed to send request: %v", err)
+	}
+	defer resp.Body.Close()
 
+	// assert
+	if resp.Header.Get("Content-type") != "application/json" {
+		t.Errorf("Content-type header is not set, got '%s'", resp.Header.Get("Content-type"))
+	}
 }

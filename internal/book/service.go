@@ -14,7 +14,8 @@ type BookServiceInterface interface {
 	GetAll() ([]models.Book, error)
 	GetByID(id int) (BookDTO, error)
 	Create(book *models.Book) error
-	Update(book *models.Book) error
+	Update(id int, payload models.Book) (*models.Book, error)
+	Delete(id int) error
 }
 
 type BookService struct {
@@ -34,7 +35,7 @@ func (service *BookService) GetAll() ([]models.Book, error) {
 	return service.repository.GetAll()
 }
 
-func (service *BookService) GetByID(id uint) (BookDTO, error) {
+func (service *BookService) GetByID(id int) (BookDTO, error) {
 	book, err := service.repository.GetByID(id)
 	if err != nil {
 		return BookDTO{}, err
@@ -50,7 +51,7 @@ func (service *BookService) Create(book *models.Book) error {
 	return service.repository.Create(book)
 }
 
-func (service *BookService) Update(id uint, payload models.Book) (*models.Book, error) {
+func (service *BookService) Update(id int, payload models.Book) (*models.Book, error) {
 	var book models.Book
 
 	// Find the book by ID
@@ -68,7 +69,7 @@ func (service *BookService) Update(id uint, payload models.Book) (*models.Book, 
 	return &book, nil
 }
 
-func (service *BookService) Delete(id uint) error {
+func (service *BookService) Delete(id int) error {
 	var book models.Book
 
 	// Find the book by ID

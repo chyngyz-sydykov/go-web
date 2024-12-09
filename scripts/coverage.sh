@@ -6,6 +6,3 @@ INCLUDED_PACKAGES=$(go list ./... | grep -v -E "$EXCLUDED_PACKAGES" | tr '\n' ',
 mkdir -p coverage
 APP_ENV=test go test -coverpkg="$INCLUDED_PACKAGES" -coverprofile=coverage/coverage.out ./tests -v
 grep -v "application/application.go" coverage/coverage.out > coverage/filtered_coverage.out
-
-
-# go tool cover -html=coverage.out

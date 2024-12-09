@@ -2,5 +2,6 @@
 /.idea
 /.vscode
 /tmp
+/coverage
 
 .env

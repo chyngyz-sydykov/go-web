@@ -27,10 +27,16 @@ jobs:
     - name: Install dependencies
       run: go mod download
 
-    - name: Test
+    - name: Test and code coverage
       env:
         APP_ENV: test
         ROOT_DIR: /home/runner/work/go-web/go-web
         DB_HOST: localhost
       run: |
         go test -v ./tests
+        chmod +x scripts/coverage.sh
+        scripts/coverage.sh
+    - name: Update coverage report
+      uses: ncruces/go-coverage-report@v0
+      with:
+        coverage-file: coverage/filtered_coverage.out

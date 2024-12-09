@@ -1,4 +1,8 @@
-#Installation
+![example workflow](https://github.com/chyngyz-sydykov/go-web/actions/workflows/ci.yml/badge.svg)
+![Go Coverage](https://github.com/chyngyz-sydykov/go-web/wiki/coverage.svg)
+
+
+# Installation
 
  - clone the repo
  - install docker
@@ -6,14 +10,14 @@
  - run `docker-compose up --build`
  - if everything is ok, please check `http://localhost:8000/api/v1/books` url in the browser
 
-#Testing
+# Testing
 
 On initial project setup, please manually create a database
 `APP_ENV=test go test ./tests/`
 run test without cache `go test -count=1 ./tests/`
 running test within docker `docker exec -it go_rest_api bash -c "APP_ENV=test go test -count=1 ./tests"`
 
-#GRPC
+# GRPC
 
 the protobuf files are stored in different repo https://github.com/chyngyz-sydykov/book-rating-protos and it is imported via following command.
 
@@ -24,7 +28,8 @@ in order to communicate with the rate microservice on local machine, do followin
 1. create a local network `docker network inspect grpc-network`
 2. after running `docker-compose up` run `docker network inspect grpc-network`
 You should see a json with the list of containers ex:
-```"Containers": {
+```
+"Containers": {
             "some_hash": {
                 "Name": "go_rating_postgres_db","
             },
@@ -37,9 +42,10 @@ You should see a json with the list of containers ex:
             "some_hash": {
                 "Name": "go_rating_server",
             }
-        },```
+},
+```
 
-#Handy commands
+# Handy commands
 
 To install new package
 

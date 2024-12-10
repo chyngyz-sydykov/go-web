@@ -15,6 +15,8 @@ func InitializeRouter(app *application.App) *http.ServeMux {
 	mux.HandleFunc("PUT /books/{bookId}", app.BookHandler.Update)
 	mux.HandleFunc("DELETE /books/{bookId}", app.BookHandler.Delete)
 
+	mux.HandleFunc("POST /ratings", app.RatingHandler.SaveRating)
+
 	v1 := http.NewServeMux()
 	v1.Handle("/api/v1/", http.StripPrefix("/api/v1", mux))
 	return v1

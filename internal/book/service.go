@@ -1,8 +1,6 @@
 package book
 
 import (
-	"fmt"
-
 	my_error "github.com/chyngyz-sydykov/go-web/error"
 	"github.com/chyngyz-sydykov/go-web/infrastructure/db/models"
 	"github.com/chyngyz-sydykov/go-web/internal/rating"
@@ -88,7 +86,6 @@ func (service *BookService) Delete(id int) error {
 }
 
 func (service *BookService) mapToBookingDTO(book models.Book, ratingDTO []rating.RatingDTO) BookDTO {
-	fmt.Println("book", book.Author)
 	bookDTO := BookDTO{
 		ID:          book.ID,
 		Title:       book.Title,

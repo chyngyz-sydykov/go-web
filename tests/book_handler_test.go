@@ -374,8 +374,14 @@ func provideDependencies(suite *IntegrationSuite) *application.App {
 	logger := logger.NewLogger()
 	commonHandler := handlers.NewCommonHandler(logger)
 
+	ratingDTO := &rating.RatingDTO{
+		BookID:  6,
+		Rating:  5,
+		Comment: "comment for some hash",
+	}
 	var ratingServiceMock RatingServiceMock
 	ratingServiceMock.On("GetByBookId", uint(6)).Return([]rating.RatingDTO{}, my_error.ErrgRpcServerDown)
+	ratingServiceMock.On("Create", ratingDTO).Return(my_error.ErrgRpcServerDown)
 
 	bookService := book.NewBookService(suite.db, &ratingServiceMock)
 	bookHandler := handlers.NewBookHandler(*bookService, *commonHandler)

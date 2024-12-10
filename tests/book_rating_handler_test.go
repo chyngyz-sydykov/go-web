@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/chyngyz-sydykov/go-web/application"
@@ -19,6 +21,8 @@ import (
 	pb "github.com/chyngyz-sydykov/go-web/proto/rating"
 	"github.com/stretchr/testify/mock"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func (suite *IntegrationSuite) TestGetByIdEndpoint_ShouldReturnSuccessResponseAndLogErrorIfRatingGrpcServerIsDown() {
@@ -103,6 +107,90 @@ func (suite *IntegrationSuite) TestGetByIdEndpoint_ShouldReturnSuccessResponseWi
 	suite.db.Unscoped().Delete(&models.Author{}, testAuthor.ID)
 }
 
+func (suite *IntegrationSuite) TestCreateRatingEndpoint_ShouldReturnBadResponse_WithInValidPayload() {
+	// arrange
+	payload := fmt.Sprintf(`{
+    "bookId": %d,
+    "comment": "comment for some hash",
+    "rating": %d
+	}`, 6, 6)
+
+	req := httptest.NewRequest("POST", "/api/v1/ratings", strings.NewReader(payload))
+
+	w := httptest.NewRecorder()
+
+	app, mockLogger := provideDependenciesWithMockRatingServerReturnsInvalidError()
+
+	router := router.InitializeRouter(app)
+
+	router.ServeHTTP(w, req)
+
+	resp := w.Result()
+
+	// Assert
+	suite.Equal(http.StatusBadRequest, resp.StatusCode)
+
+	mockLogger.AssertCalled(suite.T(), "LogError", http.StatusBadRequest, my_error.ErrInvalidArgument)
+}
+
+func (suite *IntegrationSuite) TestCreateRatingEndpoint_ShouldReturnServerError_WhenGrpcIsRaisingInteralError() {
+	// arrange
+	payload := fmt.Sprintf(`{
+    "bookId": %d,
+    "comment": "comment for some hash",
+    "rating": %d
+	}`, 6, 6)
+
+	req := httptest.NewRequest("POST", "/api/v1/ratings", strings.NewReader(payload))
+
+	w := httptest.NewRecorder()
+
+	app, mockLogger := provideDependenciesWithMockGrpcIsRaisingInternalError()
+
+	router := router.InitializeRouter(app)
+
+	router.ServeHTTP(w, req)
+
+	resp := w.Result()
+
+	// Assert
+	suite.Equal(http.StatusInternalServerError, resp.StatusCode)
+
+	mockLogger.AssertCalled(suite.T(), "LogError", http.StatusInternalServerError, my_error.ErrgRpcServerDown)
+}
+func (suite *IntegrationSuite) TestCreateRatingEndpoint_ShouldReturnCreatedResponse_WithValidPayload() {
+	// arrange
+	payload := fmt.Sprintf(`{
+    "bookId": %d,
+    "comment": "comment for some hash",
+    "rating": %d
+	}`, 1, 5)
+
+	req := httptest.NewRequest("POST", "/api/v1/ratings", strings.NewReader(payload))
+
+	w := httptest.NewRecorder()
+
+	app := provideDependenciesWithMockRatingServerBeingUp(suite, 1)
+
+	router := router.InitializeRouter(app)
+
+	router.ServeHTTP(w, req)
+
+	resp := w.Result()
+
+	// Assert
+	suite.Equal(http.StatusCreated, resp.StatusCode)
+
+	var actioalRatingDTO rating.RatingDTO
+	err := json.NewDecoder(resp.Body).Decode(&actioalRatingDTO)
+	suite.NoError(err)
+
+	suite.Suite.Assert().Equal(int32(1), actioalRatingDTO.BookID)
+	suite.Suite.Assert().Equal("comment for some hash", actioalRatingDTO.Comment)
+	suite.Suite.Assert().Equal(int32(5), actioalRatingDTO.Rating)
+	suite.Suite.Assert().Equal("some hash", actioalRatingDTO.RatingID)
+}
+
 type RatingServiceMock struct {
 	mock.Mock
 }
@@ -126,13 +214,19 @@ func (m *GrcpClientMock) GetRatings(ctx context.Context, in *pb.GetRatingsReques
 	}
 	return args.Get(0).(*pb.GetRatingsResponse), args.Error(1)
 }
-
 func (m *RatingServiceMock) GetByBookId(bookId int) ([]rating.RatingDTO, error) {
 	args := m.Called(bookId)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
 	return args.Get(0).([]rating.RatingDTO), args.Error(1)
+}
+func (m *RatingServiceMock) Create(ratingDTO *rating.RatingDTO) error {
+	args := m.Called(ratingDTO)
+	if args.Get(0) == nil {
+		return args.Error(1)
+	}
+	return args.Error(1)
 }
 
 func provideDependenciesWithMockRatingServerBeingDown(suite *IntegrationSuite, bookid int) (*application.App, *MockLogger) {
@@ -151,6 +245,35 @@ func provideDependenciesWithMockRatingServerBeingDown(suite *IntegrationSuite, b
 
 	app := &application.App{
 		BookHandler: *bookHandler,
+	}
+	return app, mockLogger
+}
+
+func provideDependenciesWithMockRatingServerReturnsInvalidError() (*application.App, *MockLogger) {
+	var grpcClientMock GrcpClientMock
+	grpcClientMock.On("SaveRating", mock.Anything, mock.Anything).Return(nil, status.Error(codes.InvalidArgument, "resource value(s) is invalid"))
+	mockLogger := new(MockLogger)
+	mockLogger.On("LogError", http.StatusBadRequest, my_error.ErrInvalidArgument).Return()
+	ratingService := rating.NewRatingService(&grpcClientMock, time.Duration(5)*time.Second)
+	commonHandler := handlers.NewCommonHandler(mockLogger)
+	ratingHandler := handlers.NewRatingHandler(ratingService, *commonHandler)
+
+	app := &application.App{
+		RatingHandler: *ratingHandler,
+	}
+	return app, mockLogger
+}
+func provideDependenciesWithMockGrpcIsRaisingInternalError() (*application.App, *MockLogger) {
+	var grpcClientMock GrcpClientMock
+	grpcClientMock.On("SaveRating", mock.Anything, mock.Anything).Return(nil, status.Error(codes.Internal, "internal error"))
+	mockLogger := new(MockLogger)
+	mockLogger.On("LogError", http.StatusInternalServerError, my_error.ErrgRpcServerDown).Return()
+	ratingService := rating.NewRatingService(&grpcClientMock, time.Duration(5)*time.Second)
+	commonHandler := handlers.NewCommonHandler(mockLogger)
+	ratingHandler := handlers.NewRatingHandler(ratingService, *commonHandler)
+
+	app := &application.App{
+		RatingHandler: *ratingHandler,
 	}
 	return app, mockLogger
 }
@@ -179,15 +302,33 @@ func provideDependenciesWithMockRatingServerBeingUp(suite *IntegrationSuite, boo
 			},
 		}}
 
+	saveRatingRequest := &pb.SaveRatingRequest{
+		BookId:  int32(bookId),
+		Rating:  5,
+		Comment: "comment for some hash",
+	}
+	saveRatingResponse := &pb.SaveRatingResponse{
+		Rating: &pb.Rating{
+			RatingId: "some hash",
+			BookId:   int32(bookId),
+			Rating:   5,
+			Comment:  "comment for some hash",
+		},
+	}
+
 	grpcClientMock.On("GetRatings", mock.Anything, getRatingRequest).Return(getRatingsResponse, nil)
 
+	grpcClientMock.On("SaveRating", mock.Anything, saveRatingRequest).Return(saveRatingResponse, nil)
+
 	ratingService := rating.NewRatingService(&grpcClientMock, time.Duration(5)*time.Second)
+	ratingHandler := handlers.NewRatingHandler(ratingService, *commonHandler)
 
 	bookService := book.NewBookService(suite.db, ratingService)
 	bookHandler := handlers.NewBookHandler(*bookService, *commonHandler)
 
 	app := &application.App{
-		BookHandler: *bookHandler,
+		BookHandler:   *bookHandler,
+		RatingHandler: *ratingHandler,
 	}
 	return app
 }

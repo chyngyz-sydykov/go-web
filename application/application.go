@@ -37,7 +37,7 @@ func InitializeApplication() *App {
 	commonHandler := handlers.NewCommonHandler(logger)
 
 	ratingService := rating.NewRatingService(ratingClient, time.Duration(config.GrpcTimeoutDuration)*time.Second)
-	ratingHandler := handlers.NewRatingHandler(*commonHandler)
+	ratingHandler := handlers.NewRatingHandler(ratingService, *commonHandler)
 
 	bookService := book.NewBookService(db, ratingService)
 	bookHandler := handlers.NewBookHandler(*bookService, *commonHandler)

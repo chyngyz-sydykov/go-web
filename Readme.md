@@ -1,6 +1,12 @@
 ![example workflow](https://github.com/chyngyz-sydykov/go-web/actions/workflows/ci.yml/badge.svg)
 ![Go Coverage](https://github.com/chyngyz-sydykov/go-web/wiki/coverage.svg)
 
+# About the project
+
+This is a one of the microservices for personal pet project as study practice. the whole system consists of 3 microservices:
+ - **go-web** (current project) works as an api gateway. the endpoints include CRUD actions for book, create endpoint for saving rating
+ - **go-rating** another microservice that saves new rating and return list of rating by book id. the communication between go-web and go-rating is via gRPC [link](https://github.com/chyngyz-sydykov/go-rating)
+- **go-recommendation** On Progress third microservice that will hold business logic related with recommendation of books depending on rating and how often the book is edited or created. the communication will be done via RabbitMQ
 
 # Installation
 

@@ -271,7 +271,7 @@ func (suite *IntegrationSuite) TestUpdateEndpoint_ShouldReturnOkResponseWithBody
 
 	w := httptest.NewRecorder()
 
-	app := provideDependencies(suite)
+	app := provideDependenciesWithMessageBroker(suite, testBook.ID, strings.NewReader(payload))
 	router := router.InitializeRouter(app)
 
 	router.ServeHTTP(w, req)
@@ -379,17 +379,90 @@ func provideDependencies(suite *IntegrationSuite) *application.App {
 		Rating:  5,
 		Comment: "comment for some hash",
 	}
+
+	var messageBrokerMock MessageBrokerMock
+	messageBrokerMock.On("Publish", mock.Anything).Return(nil)
+
 	var ratingServiceMock RatingServiceMock
 	ratingServiceMock.On("GetByBookId", uint(6)).Return([]rating.RatingDTO{}, my_error.ErrgRpcServerDown)
 	ratingServiceMock.On("Create", ratingDTO).Return(my_error.ErrgRpcServerDown)
 
-	bookService := book.NewBookService(suite.db, &ratingServiceMock)
+	bookService := book.NewBookService(suite.db, &messageBrokerMock, &ratingServiceMock)
 	bookHandler := handlers.NewBookHandler(*bookService, *commonHandler)
 
 	app := &application.App{
 		BookHandler: *bookHandler,
 	}
 	return app
+}
+
+func provideDependenciesWithMessageBroker(suite *IntegrationSuite, bookId uint, body io.Reader) *application.App {
+	logger := logger.NewLogger()
+	commonHandler := handlers.NewCommonHandler(logger)
+
+	ratingDTO := &rating.RatingDTO{
+		BookID:  6,
+		Rating:  5,
+		Comment: "comment for some hash",
+	}
+
+	var messageBrokerMock MessageBrokerMock
+
+	type Payload struct {
+		Title    string `json:"title"`
+		ICBN     string `json:"icbn"`
+		AuthorId uint   `json:"authorId"`
+	}
+
+	// Parse the body to extract values
+	var payload Payload
+	err := json.NewDecoder(body).Decode(&payload)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to parse body: %v", err))
+	}
+	fmt.Println("Payload: ", payload)
+	expectedMessage := book.BookMessage{
+		ID:       bookId,
+		Title:    payload.Title,
+		ICBN:     payload.ICBN,
+		EditedAt: time.Now(),
+		Event:    "bookUpdated",
+	}
+
+	messageBrokerMock.On("Publish", mock.MatchedBy(func(msg book.BookMessage) bool {
+		return msg.Title == expectedMessage.Title &&
+			msg.ICBN == expectedMessage.ICBN &&
+			msg.Event == expectedMessage.Event &&
+			msg.ID == bookId
+	})).Return(nil)
+
+	var ratingServiceMock RatingServiceMock
+	ratingServiceMock.On("GetByBookId", uint(6)).Return([]rating.RatingDTO{}, my_error.ErrgRpcServerDown)
+	ratingServiceMock.On("Create", ratingDTO).Return(my_error.ErrgRpcServerDown)
+
+	bookService := book.NewBookService(suite.db, &messageBrokerMock, &ratingServiceMock)
+	bookHandler := handlers.NewBookHandler(*bookService, *commonHandler)
+
+	app := &application.App{
+		BookHandler: *bookHandler,
+	}
+	return app
+}
+
+type BookPayload struct {
+	Title    string `json:"title"`
+	ICBN     string `json:"icbn"`
+	AuthorID int64  `json:"authorId"`
+}
+
+// Function to read data from io.Reader and extract fields
+func extractBookData(body io.Reader) (*BookPayload, error) {
+	var payload BookPayload
+	err := json.NewDecoder(body).Decode(&payload)
+	if err != nil {
+		return nil, err
+	}
+	return &payload, nil
 }
 
 type MockLogger struct {

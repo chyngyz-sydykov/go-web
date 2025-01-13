@@ -21,3 +21,11 @@ type BookDTO struct {
 	Author      AuthorDTO          `json:"author"`
 	Ratings     []rating.RatingDTO `json:"ratings"`
 }
+
+type BookMessage struct {
+	ID       uint      `json:"id"`
+	Title    string    `json:"title"`
+	ICBN     string    `json:"icbn"`
+	EditedAt time.Time `json:"EditedAt"`
+	Event    string    `json:"event"`
+}

@@ -197,6 +197,9 @@ type RatingServiceMock struct {
 type GrcpClientMock struct {
 	mock.Mock
 }
+type MessageBrokerMock struct {
+	mock.Mock
+}
 
 func (m *GrcpClientMock) SaveRating(ctx context.Context, in *pb.SaveRatingRequest, opts ...grpc.CallOption) (*pb.SaveRatingResponse, error) {
 	args := m.Called(ctx, in)
@@ -229,6 +232,18 @@ func (m *RatingServiceMock) Create(ratingDTO *rating.RatingDTO) error {
 	return args.Error(1)
 }
 
+func (m *MessageBrokerMock) Publish(message interface{}) error {
+	args := m.Called(message)
+	return args.Error(0)
+}
+
+func (m *MessageBrokerMock) InitializeMessageBroker() {
+	m.Called()
+}
+
+func (m *MessageBrokerMock) Close() {
+}
+
 func provideDependenciesWithMockRatingServerBeingDown(suite *IntegrationSuite, bookid int) (*application.App, *MockLogger) {
 	mockLogger := new(MockLogger)
 
@@ -236,11 +251,11 @@ func provideDependenciesWithMockRatingServerBeingDown(suite *IntegrationSuite, b
 	mockLogger.On("LogError", 503, my_error.ErrgRpcServerDown).Return()
 
 	commonHandler := handlers.NewCommonHandler(mockLogger)
-
 	var ratingServiceMock RatingServiceMock
 	ratingServiceMock.On("GetByBookId", bookid).Return(nil, my_error.ErrgRpcServerDown)
 
-	bookService := book.NewBookService(suite.db, &ratingServiceMock)
+	var messageBrokerMock MessageBrokerMock
+	bookService := book.NewBookService(suite.db, &messageBrokerMock, &ratingServiceMock)
 	bookHandler := handlers.NewBookHandler(*bookService, *commonHandler)
 
 	app := &application.App{
@@ -323,7 +338,8 @@ func provideDependenciesWithMockRatingServerBeingUp(suite *IntegrationSuite, boo
 	ratingService := rating.NewRatingService(&grpcClientMock, time.Duration(5)*time.Second)
 	ratingHandler := handlers.NewRatingHandler(ratingService, *commonHandler)
 
-	bookService := book.NewBookService(suite.db, ratingService)
+	var messageBrokerMock MessageBrokerMock
+	bookService := book.NewBookService(suite.db, &messageBrokerMock, ratingService)
 	bookHandler := handlers.NewBookHandler(*bookService, *commonHandler)
 
 	app := &application.App{

@@ -1,8 +1,13 @@
 package book
 
 import (
+	"fmt"
+	"log"
+	"time"
+
 	my_error "github.com/chyngyz-sydykov/go-web/error"
 	"github.com/chyngyz-sydykov/go-web/infrastructure/db/models"
+	messagebroker "github.com/chyngyz-sydykov/go-web/infrastructure/messagebroker"
 	"github.com/chyngyz-sydykov/go-web/internal/rating"
 
 	"gorm.io/gorm"
@@ -18,13 +23,15 @@ type BookServiceInterface interface {
 
 type BookService struct {
 	repository    BookRepository
+	messageBroker messagebroker.MessageBrokerInterface
 	ratingService rating.RatingServiceInterface
 }
 
-func NewBookService(db *gorm.DB, ratingService rating.RatingServiceInterface) *BookService {
+func NewBookService(db *gorm.DB, messageBrokerPublisher messagebroker.MessageBrokerInterface, ratingService rating.RatingServiceInterface) *BookService {
 	repository := NewBookRepository(db)
 	return &BookService{
 		repository:    *repository,
+		messageBroker: messageBrokerPublisher,
 		ratingService: ratingService,
 	}
 }
@@ -64,6 +71,12 @@ func (service *BookService) Update(id int, payload models.Book) (*models.Book, e
 		return nil, err
 	}
 
+	err = service.publishMessage(book, "bookUpdated")
+	if err != nil {
+		fmt.Println("Failed to publish message")
+		return nil, err
+	}
+
 	return &book, nil
 }
 
@@ -100,4 +113,20 @@ func (service *BookService) mapToBookingDTO(book models.Book, ratingDTO []rating
 		},
 	}
 	return bookDTO
+}
+
+func (service *BookService) publishMessage(book models.Book, event string) error {
+
+	bookMessage := BookMessage{
+		ID:       book.ID,
+		Title:    book.Title,
+		ICBN:     book.ICBN,
+		EditedAt: time.Now(),
+		Event:    event,
+	}
+
+	if err := service.messageBroker.Publish(bookMessage); err != nil {
+		log.Fatalf("Failed to publish event: %v", err)
+	}
+	return nil
 }

@@ -15,6 +15,10 @@ type Config struct {
 	RatingServicePort      string
 	RatingServiceServer    string
 	GrpcTimeoutDuration    int
+	RabbitMqUser           string
+	RabbitMqPassword       string
+	RabbitMqQueueName      string
+	RabbitMqContainerName  string
 }
 
 type DBConfig struct {
@@ -38,6 +42,10 @@ func LoadConfig() (*Config, error) {
 		RatingServiceServer:    getEnv("RATING_SERVICE_SERVER", "localhost"),
 		RatingServicePort:      getEnv("RATING_SERVICE_PORT", "1112"),
 		GrpcTimeoutDuration:    getIntEnv("GRPC_TIMEOUT_DURATION", 30),
+		RabbitMqUser:           getEnv("RABBITMQ_USER", "guest"),
+		RabbitMqPassword:       getEnv("RABBITMQ_PASSWORD", "guest"),
+		RabbitMqQueueName:      getEnv("RABBITMQ_QUEUE_NAME", "queue-name"),
+		RabbitMqContainerName:  getEnv("RABBITMQ_CONTAINER_NAME", "go_web_rabbitmq"),
 	}
 
 	return config, nil

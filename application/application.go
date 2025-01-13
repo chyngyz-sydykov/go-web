@@ -8,6 +8,7 @@ import (
 	"github.com/chyngyz-sydykov/go-web/infrastructure/config"
 	"github.com/chyngyz-sydykov/go-web/infrastructure/db"
 	"github.com/chyngyz-sydykov/go-web/infrastructure/logger"
+	"github.com/chyngyz-sydykov/go-web/infrastructure/messagebroker"
 	"github.com/chyngyz-sydykov/go-web/internal/book"
 	"github.com/chyngyz-sydykov/go-web/internal/rating"
 	"google.golang.org/grpc"
@@ -29,17 +30,19 @@ func InitializeApplication() *App {
 	}
 
 	db := initializeDatabase()
+	//defer db.Close()
 
-	ratingClient := initializeRatingGrpcClient()
+	rabbitMqPublisher := initializeRabbitMqPublisher(config)
+	//defer rabbitMqPublisher.Close()
 
 	logger := logger.NewLogger()
-
 	commonHandler := handlers.NewCommonHandler(logger)
 
+	ratingClient := initializeRatingGrpcClient()
 	ratingService := rating.NewRatingService(ratingClient, time.Duration(config.GrpcTimeoutDuration)*time.Second)
 	ratingHandler := handlers.NewRatingHandler(ratingService, *commonHandler)
 
-	bookService := book.NewBookService(db, ratingService)
+	bookService := book.NewBookService(db, rabbitMqPublisher, ratingService)
 	bookHandler := handlers.NewBookHandler(*bookService, *commonHandler)
 
 	app := &App{
@@ -65,6 +68,16 @@ func initializeRatingGrpcClient() pb.RatingServiceClient {
 	// Create the gRPC client for the RatingService.
 	ratingClient := pb.NewRatingServiceClient(conn)
 	return ratingClient
+}
+func initializeRabbitMqPublisher(config *config.Config) messagebroker.MessageBrokerInterface {
+	rabbitMQURL := "amqp://" + config.RabbitMqUser + ":" + config.RabbitMqPassword + "@" + config.RabbitMqContainerName + ":5672/"
+	publisher, err := messagebroker.NewRabbitMQPublisher(rabbitMQURL, config.RabbitMqQueueName)
+
+	if err != nil {
+		log.Fatalf("Failed to initialize message publisher: %v", err)
+	}
+	publisher.InitializeMessageBroker()
+	return publisher
 }
 
 func initializeDatabase() *gorm.DB {

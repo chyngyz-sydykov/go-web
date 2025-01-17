@@ -23,9 +23,7 @@ type BookDTO struct {
 }
 
 type BookMessage struct {
-	ID       uint      `json:"id"`
-	Title    string    `json:"title"`
-	ICBN     string    `json:"icbn"`
+	BookId   int       `json:"book_id"`
 	EditedAt time.Time `json:"EditedAt"`
 	Event    string    `json:"event"`
 }

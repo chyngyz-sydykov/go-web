@@ -89,7 +89,7 @@ func getIntEnv(key string, defaultValue int) int {
 	if value, exists := os.LookupEnv(key); exists {
 		number, err := strconv.Atoi(value)
 		if err != nil {
-			fmt.Errorf("error cannot convert string %s to int. Returning default value", value)
+			fmt.Println("error cannot convert string", value, "to int. Returning default value")
 			return defaultValue
 		}
 		return number

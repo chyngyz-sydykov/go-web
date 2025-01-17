@@ -422,18 +422,14 @@ func provideDependenciesWithMessageBroker(suite *IntegrationSuite, bookId uint, 
 	}
 	fmt.Println("Payload: ", payload)
 	expectedMessage := book.BookMessage{
-		ID:       bookId,
-		Title:    payload.Title,
-		ICBN:     payload.ICBN,
+		BookId:   int(bookId),
 		EditedAt: time.Now(),
 		Event:    "bookUpdated",
 	}
 
 	messageBrokerMock.On("Publish", mock.MatchedBy(func(msg book.BookMessage) bool {
-		return msg.Title == expectedMessage.Title &&
-			msg.ICBN == expectedMessage.ICBN &&
-			msg.Event == expectedMessage.Event &&
-			msg.ID == bookId
+		return msg.Event == expectedMessage.Event &&
+			msg.BookId == int(bookId)
 	})).Return(nil)
 
 	var ratingServiceMock RatingServiceMock

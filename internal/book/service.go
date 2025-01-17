@@ -118,9 +118,7 @@ func (service *BookService) mapToBookingDTO(book models.Book, ratingDTO []rating
 func (service *BookService) publishMessage(book models.Book, event string) error {
 
 	bookMessage := BookMessage{
-		ID:       book.ID,
-		Title:    book.Title,
-		ICBN:     book.ICBN,
+		BookId:   int(book.ID),
 		EditedAt: time.Now(),
 		Event:    event,
 	}

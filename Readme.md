@@ -37,7 +37,7 @@ generate grpc files `docker exec -it go_rest_api bash -c "./generate_protoc.sh"`
 
 in order to communicate with the rate microservice on local machine, do following
 
-1. create a local network `docker network inspect grpc-network`
+1. create a local network `docker network create grpc-network`
 2. after running `docker-compose up` run `docker network inspect grpc-network`
 You should see a json with the list of containers ex:
 ```

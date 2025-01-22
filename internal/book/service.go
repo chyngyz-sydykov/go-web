@@ -13,6 +13,8 @@ import (
 	"gorm.io/gorm"
 )
 
+const BOOKUPDATED_EVENTNAME = "bookUpdated"
+
 type BookServiceInterface interface {
 	GetAll() ([]models.Book, error)
 	GetByID(id int) (BookDTO, error)
@@ -71,7 +73,7 @@ func (service *BookService) Update(id int, payload models.Book) (*models.Book, e
 		return nil, err
 	}
 
-	err = service.publishMessage(book, "bookUpdated")
+	err = service.publishMessage(book, BOOKUPDATED_EVENTNAME)
 	if err != nil {
 		fmt.Println("Failed to publish message")
 		return nil, err

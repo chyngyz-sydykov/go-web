@@ -1,7 +1,9 @@
 package application
 
 import (
+	"fmt"
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/chyngyz-sydykov/go-web/application/handlers"
@@ -29,13 +31,13 @@ func InitializeApplication() *App {
 		log.Fatalf("Could not config: %v", err)
 	}
 
-	db := initializeDatabase()
+	logger := logger.NewLogger()
+	db := InitializeDatabase()
 	//defer db.Close()
 
-	rabbitMqPublisher := initializeRabbitMqPublisher(config)
+	rabbitMqPublisher := InitializeRabbitMqPublisher(config, logger)
 	//defer rabbitMqPublisher.Close()
 
-	logger := logger.NewLogger()
 	commonHandler := handlers.NewCommonHandler(logger)
 
 	ratingClient := initializeRatingGrpcClient()
@@ -69,18 +71,20 @@ func initializeRatingGrpcClient() pb.RatingServiceClient {
 	ratingClient := pb.NewRatingServiceClient(conn)
 	return ratingClient
 }
-func initializeRabbitMqPublisher(config *config.Config) messagebroker.MessageBrokerInterface {
+func InitializeRabbitMqPublisher(config *config.Config, logger logger.LoggerInterface) messagebroker.MessageBrokerInterface {
 	rabbitMQURL := "amqp://" + config.RabbitMqUser + ":" + config.RabbitMqPassword + "@" + config.RabbitMqContainerName + ":5672/"
 	publisher, err := messagebroker.NewRabbitMQPublisher(rabbitMQURL, config.RabbitMqQueueName)
 
 	if err != nil {
-		log.Fatalf("Failed to initialize message publisher: %v", err)
+		err = fmt.Errorf("failed to initialize message publisher: %v", err)
+		logger.LogError(http.StatusInternalServerError, err)
+	} else {
+		publisher.InitializeMessageBroker()
 	}
-	publisher.InitializeMessageBroker()
 	return publisher
 }
 
-func initializeDatabase() *gorm.DB {
+func InitializeDatabase() *gorm.DB {
 	dbConfig, err := config.LoadDBConfig()
 	if err != nil {
 		log.Fatalf("Could not load database config: %v", err)

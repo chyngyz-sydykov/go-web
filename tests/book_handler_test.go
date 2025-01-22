@@ -420,7 +420,6 @@ func provideDependenciesWithMessageBroker(suite *IntegrationSuite, bookId uint, 
 	if err != nil {
 		panic(fmt.Sprintf("Failed to parse body: %v", err))
 	}
-	fmt.Println("Payload: ", payload)
 	expectedMessage := book.BookMessage{
 		BookId:   int(bookId),
 		EditedAt: time.Now(),

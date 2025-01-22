@@ -17,21 +17,41 @@ jobs:
         ports:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 3
-
+      rabbitmq:
+        image: rabbitmq:4-management
+        ports:
+          - 5672:5672
+          - 15672:15672
+        options: --name rabbitmq
+        env:
+          RABBITMQ_DEFAULT_USER: user
+          RABBITMQ_DEFAULT_PASS: password
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-go@v4
       with:
         go-version: '1.23.x'
-
+    - name: Wait for RabbitMQ
+      run: |
+        echo "Waiting for RabbitMQ to be ready..."
+        for i in {1..10}; do
+          if nc -z localhost 5672; then
+            echo "RabbitMQ is ready!"
+            break
+          fi
+          echo "RabbitMQ is not ready yet. Retrying in 5 seconds..."
+          sleep 5
+        done
     - name: Install dependencies
       run: go mod download
-
     - name: Test and code coverage
       env:
         APP_ENV: test
         ROOT_DIR: /home/runner/work/go-web/go-web
         DB_HOST: localhost
+        RABBITMQ_CONTAINER_NAME: localhost
+        RABBITMQ_USER: user
+        RABBITMQ_PASSWORD: password
       run: |
         go test -v ./tests
         chmod +x scripts/coverage.sh

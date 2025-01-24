@@ -12,6 +12,12 @@ type AuthorDTO struct {
 	Lastname  string
 }
 
+type BookRequest struct {
+	Title    string `json:"title" example:"book title"`
+	ICBN     string `json:"icbn" example:"book"`
+	AuthorID int32  `json:"authorId" example:"1"`
+}
+
 type BookDTO struct {
 	ID          uint               `json:"id"`
 	Title       string             `json:"title"`

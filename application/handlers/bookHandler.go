@@ -22,13 +22,20 @@ type BookResponseDto struct {
 	Title       string `json:"title"`
 	ICBN        string `json:"icbn"`
 	PublishedAt time.Time
-	authorId    uint `json:"author_id"`
+	AuthorId    uint `json:"author_id"`
 }
 
 func NewBookHandler(service book.BookService, commonHandler CommonHandler) *BookHandler {
 	return &BookHandler{service: service, commonHandler: commonHandler}
 }
 
+// @Summary Get all books
+// @Description Retrieve a list of all books
+// @Tags books
+// @Produce json
+// @Success 200 {array} models.Book
+// @Failure 500 {object} ErrorResponse
+// @Router /books [get]
 func (handler *BookHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	books, err := handler.service.GetAll()
 	if err != nil {
@@ -45,6 +52,16 @@ func (handler *BookHandler) GetAll(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(books)
 }
 
+// @Summary Get a book by ID
+// @Description Retrieve details of a specific book by its ID
+// @Tags books
+// @Produce json
+// @Param bookId path int true "Book ID"
+// @Success 200 {object} models.Book
+// @Failure 400 {object} ErrorResponse "Invalid book ID"
+// @Failure 404 {object} ErrorResponse "Book not found"
+// @Failure 500 {object} ErrorResponse "Server error"
+// @Router /books/{bookId} [get]
 func (handler *BookHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	bookId, err := strconv.ParseUint(r.PathValue("bookId"), 10, 64)
 
@@ -79,9 +96,19 @@ func (handler *BookHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(book)
 }
 
+// @Summary Create a new book
+// @Description Add a new book to the library
+// @Tags books
+// @Accept json
+// @Produce json
+// @Param book body book.BookRequest true "Book payload"
+// @Success 201 {object} models.Book
+// @Failure 400 {object} ErrorResponse "Invalid payload"
+// @Failure 500 {object} ErrorResponse "Server error"
+// @Router /books [post]
 func (handler *BookHandler) Create(w http.ResponseWriter, r *http.Request) {
-	var book models.Book
-	err := json.NewDecoder(r.Body).Decode(&book)
+	var bookRequest book.BookRequest
+	err := json.NewDecoder(r.Body).Decode(&bookRequest)
 	if err != nil {
 		handler.commonHandler.HandleError(w, err, http.StatusBadRequest,
 			ErrorResponse{
@@ -92,7 +119,9 @@ func (handler *BookHandler) Create(w http.ResponseWriter, r *http.Request) {
 			})
 		return
 	}
-	if err := handler.service.Create(&book); err != nil {
+
+	book, err := handler.service.Create(bookRequest)
+	if err != nil {
 
 		handler.commonHandler.HandleError(w, err, http.StatusInternalServerError,
 			ErrorResponse{
@@ -108,8 +137,19 @@ func (handler *BookHandler) Create(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(book)
 }
 
+// @Summary Update a book
+// @Description Update details of a specific book
+// @Tags books
+// @Accept json
+// @Produce json
+// @Param bookId path int true "Book ID"
+// @Param book body book.BookRequest true "Book payload"
+// @Success 200 {object} models.Book
+// @Failure 400 {object} ErrorResponse "Invalid book ID or payload"
+// @Failure 404 {object} ErrorResponse "Book not found"
+// @Failure 500 {object} ErrorResponse "Server error"
+// @Router /books/{bookId} [put]
 func (handler *BookHandler) Update(w http.ResponseWriter, r *http.Request) {
-
 	bookId, err := strconv.ParseUint(r.PathValue("bookId"), 10, 64)
 
 	if err != nil {
@@ -122,10 +162,9 @@ func (handler *BookHandler) Update(w http.ResponseWriter, r *http.Request) {
 			})
 		return
 	}
+	var bookRequest book.BookRequest
 
-	var payload models.Book
-
-	err = json.NewDecoder(r.Body).Decode(&payload)
+	err = json.NewDecoder(r.Body).Decode(&bookRequest)
 	if err != nil {
 		handler.commonHandler.HandleError(w, err, http.StatusBadRequest,
 			ErrorResponse{
@@ -137,7 +176,7 @@ func (handler *BookHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var updatedBook *models.Book
-	updatedBook, err = handler.service.Update(int(bookId), payload)
+	updatedBook, err = handler.service.Update(int(bookId), bookRequest)
 	if err != nil {
 		if errors.Is(err, my_error.ErrNotFound) {
 			handler.commonHandler.HandleError(w, err, http.StatusNotFound,
@@ -163,6 +202,18 @@ func (handler *BookHandler) Update(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(updatedBook)
 }
+
+// Delete handles the HTTP request to delete a book by its ID.
+// @Summary Delete a book
+// @Description Delete a book by its ID
+// @Tags books
+// @Produce json
+// @Param bookId path int true "Book ID"
+// @Success 200 {object} string "Book deleted successfully"
+// @Failure 400 {object} ErrorResponse "Invalid book ID"
+// @Failure 404 {object} ErrorResponse "Book not found"
+// @Failure 500 {object} ErrorResponse "Server error"
+// @Router /api/v1/books/{bookId} [delete]
 
 func (handler *BookHandler) Delete(w http.ResponseWriter, r *http.Request) {
 

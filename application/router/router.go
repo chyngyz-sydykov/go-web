@@ -4,8 +4,18 @@ import (
 	"net/http"
 
 	"github.com/chyngyz-sydykov/go-web/application"
+	_ "github.com/chyngyz-sydykov/go-web/docs"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
+// @title           Go Web API
+// @version         1.0
+// @description     This is a sample server for a bookstore API.
+// @contact.name   You wish. no support whatsoever
+// @contact.email  chyngys6@gmail.com
+// @host      localhost:8000
+// @BasePath  /api/v1
+// @schemes   http
 func InitializeRouter(app *application.App) *http.ServeMux {
 	mux := http.NewServeMux()
 
@@ -19,5 +29,10 @@ func InitializeRouter(app *application.App) *http.ServeMux {
 
 	v1 := http.NewServeMux()
 	v1.Handle("/api/v1/", http.StripPrefix("/api/v1", mux))
-	return v1
+
+	root := http.NewServeMux()
+	root.Handle("/swagger/", httpSwagger.WrapHandler)
+	root.Handle("/api/v1/", v1)
+
+	return root
 }

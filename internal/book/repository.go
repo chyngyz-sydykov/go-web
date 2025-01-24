@@ -9,7 +9,7 @@ import (
 type BookRepositoryInterface interface {
 	GetAll() ([]models.Book, error)
 	GetByID(id int) (models.Book, error)
-	Create(book models.Book) error
+	Create(book models.Book) (*models.Book, error)
 	Update(book *models.Book, payload models.Book) error
 }
 
@@ -37,8 +37,9 @@ func (repository *BookRepository) GetByID(id int) (models.Book, error) {
 	return book, nil
 }
 
-func (repository *BookRepository) Create(book *models.Book) error {
-	return repository.db.Create(&book).Error
+func (repository *BookRepository) Create(book *models.Book) (*models.Book, error) {
+	err := repository.db.Create(&book).Error
+	return book, err
 }
 
 func (repository *BookRepository) Update(book *models.Book, payload models.Book) error {

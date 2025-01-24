@@ -41,7 +41,7 @@ func (suite *IntegrationSuite) TestBookUpdating_ShouldSuccessfullyPublishToRabbi
 
 	// Act
 	var updatedBook *models.Book
-	updatedBook, err = bookService.Update(int(testBook.ID), models.Book{
+	updatedBook, err = bookService.Update(int(testBook.ID), book.BookRequest{
 		Title: "updated title",
 	})
 	if err != nil {

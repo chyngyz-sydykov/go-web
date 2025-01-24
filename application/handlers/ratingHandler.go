@@ -21,6 +21,16 @@ func NewRatingHandler(service rating.RatingServiceInterface, commonHandler Commo
 	}
 }
 
+// @Summary Save a rating
+// @Description Save a rating for a specific book
+// @Tags ratings
+// @Accept json
+// @Produce json
+// @Param rating body rating.RatingDTO true "Rating payload"
+// @Success 201 {object} rating.RatingDTO
+// @Failure 400 {object} ErrorResponse "Invalid payload"
+// @Failure 500 {object} ErrorResponse "Server error"
+// @Router /ratings [post]
 func (handler *RatingHandler) SaveRating(w http.ResponseWriter, r *http.Request) {
 	var ratingDTO rating.RatingDTO
 	err := json.NewDecoder(r.Body).Decode(&ratingDTO)

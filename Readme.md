@@ -29,6 +29,10 @@ run tests within docker (preferred way) `docker exec -it go_rest_api bash -c "AP
 run test coverage on local machine `docker exec -it go_rest_api bash "scripts/coverage.sh"`
 `go tool cover -html=coverage/filtered_coverage.out`
 
+# SWAGGER
+
+To generate swagger documentatation `docker exec -it go_rest_api bash -c "swag init --generalInfo router.go --dir ./application/router,./application/handlers --parseDependency"`
+
 # GRPC
 
 the protobuf files are stored in different repo https://github.com/chyngyz-sydykov/book-rating-protos and it is imported via following command.

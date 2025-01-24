@@ -18,8 +18,8 @@ const BOOKUPDATED_EVENTNAME = "bookUpdated"
 type BookServiceInterface interface {
 	GetAll() ([]models.Book, error)
 	GetByID(id int) (BookDTO, error)
-	Create(book *models.Book) error
-	Update(id int, payload models.Book) (*models.Book, error)
+	Create(book BookRequest) (*models.Book, error)
+	Update(id int, payload BookRequest) (*models.Book, error)
 	Delete(id int) error
 }
 
@@ -54,11 +54,14 @@ func (service *BookService) GetByID(id int) (BookDTO, error) {
 	return service.mapToBookingDTO(book, ratings), nil
 }
 
-func (service *BookService) Create(book *models.Book) error {
-	return service.repository.Create(book)
+func (service *BookService) Create(bookRequest BookRequest) (*models.Book, error) {
+	gormBook := service.mapBookRequestToGormBook(bookRequest)
+	publishedAt := time.Now()
+	gormBook.PublishedAt = &publishedAt
+	return service.repository.Create(gormBook)
 }
 
-func (service *BookService) Update(id int, payload models.Book) (*models.Book, error) {
+func (service *BookService) Update(id int, bookRequest BookRequest) (*models.Book, error) {
 	var book models.Book
 
 	// Find the book by ID
@@ -68,7 +71,8 @@ func (service *BookService) Update(id int, payload models.Book) (*models.Book, e
 	}
 
 	// Update the book with the payload fields
-	err = service.repository.Update(&book, payload)
+	payload := service.mapBookRequestToGormBook(bookRequest)
+	err = service.repository.Update(&book, *payload)
 	if err != nil {
 		return nil, err
 	}
@@ -115,6 +119,14 @@ func (service *BookService) mapToBookingDTO(book models.Book, ratingDTO []rating
 		},
 	}
 	return bookDTO
+}
+
+func (service *BookService) mapBookRequestToGormBook(bookRequest BookRequest) *models.Book {
+	return &models.Book{
+		Title:    bookRequest.Title,
+		ICBN:     bookRequest.ICBN,
+		AuthorId: int64(bookRequest.AuthorID),
+	}
 }
 
 func (service *BookService) publishMessage(book models.Book, event string) error {

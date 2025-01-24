@@ -1,6 +1,6 @@
 #!/bin/bash
 
-EXCLUDED_PACKAGES="proto|infrastructure/config"
+EXCLUDED_PACKAGES="proto|infrastructure/config|docs"
 INCLUDED_PACKAGES=$(go list ./... | grep -v -E "$EXCLUDED_PACKAGES" | tr '\n' ',' | sed 's/,$//')
 
 mkdir -p coverage

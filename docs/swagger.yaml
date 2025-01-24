@@ -1,0 +1,241 @@
+basePath: /api/v1
+definitions:
+  book.BookRequest:
+    properties:
+      authorId:
+        example: 1
+        type: integer
+      icbn:
+        example: book
+        type: string
+      title:
+        example: book title
+        type: string
+    type: object
+  gorm.DeletedAt:
+    properties:
+      time:
+        type: string
+      valid:
+        description: Valid is true if Time is not NULL
+        type: boolean
+    type: object
+  handlers.ErrorDetail:
+    properties:
+      code:
+        type: string
+      message:
+        type: string
+    type: object
+  handlers.ErrorResponse:
+    properties:
+      error:
+        $ref: '#/definitions/handlers.ErrorDetail'
+    type: object
+  models.Author:
+    properties:
+      createdAt:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      firstname:
+        type: string
+      id:
+        type: integer
+      lastname:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  models.Book:
+    properties:
+      author:
+        $ref: '#/definitions/models.Author'
+      authorId:
+        type: integer
+      createdAt:
+        type: string
+      deletedAt:
+        $ref: '#/definitions/gorm.DeletedAt'
+      icbn:
+        type: string
+      id:
+        type: integer
+      publishedAt:
+        type: string
+      title:
+        type: string
+      updatedAt:
+        type: string
+    type: object
+  rating.RatingDTO:
+    properties:
+      bookId:
+        type: integer
+      comment:
+        description: Optional field
+        type: string
+      rating:
+        type: integer
+      ratingId:
+        type: string
+    type: object
+host: localhost:8000
+info:
+  contact:
+    email: chyngys6@gmail.com
+    name: You wish. no support whatsoever
+  description: This is a sample server for a bookstore API.
+  title: Go Web API
+  version: "1.0"
+paths:
+  /books:
+    get:
+      description: Retrieve a list of all books
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Book'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Get all books
+      tags:
+      - books
+    post:
+      consumes:
+      - application/json
+      description: Add a new book to the library
+      parameters:
+      - description: Book payload
+        in: body
+        name: book
+        required: true
+        schema:
+          $ref: '#/definitions/book.BookRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Book'
+        "400":
+          description: Invalid payload
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Server error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Create a new book
+      tags:
+      - books
+  /books/{bookId}:
+    get:
+      description: Retrieve details of a specific book by its ID
+      parameters:
+      - description: Book ID
+        in: path
+        name: bookId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Book'
+        "400":
+          description: Invalid book ID
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "404":
+          description: Book not found
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Server error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Get a book by ID
+      tags:
+      - books
+    put:
+      consumes:
+      - application/json
+      description: Update details of a specific book
+      parameters:
+      - description: Book ID
+        in: path
+        name: bookId
+        required: true
+        type: integer
+      - description: Book payload
+        in: body
+        name: book
+        required: true
+        schema:
+          $ref: '#/definitions/book.BookRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Book'
+        "400":
+          description: Invalid book ID or payload
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "404":
+          description: Book not found
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Server error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Update a book
+      tags:
+      - books
+  /ratings:
+    post:
+      consumes:
+      - application/json
+      description: Save a rating for a specific book
+      parameters:
+      - description: Rating payload
+        in: body
+        name: rating
+        required: true
+        schema:
+          $ref: '#/definitions/rating.RatingDTO'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/rating.RatingDTO'
+        "400":
+          description: Invalid payload
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+        "500":
+          description: Server error
+          schema:
+            $ref: '#/definitions/handlers.ErrorResponse'
+      summary: Save a rating
+      tags:
+      - ratings
+schemes:
+- http
+swagger: "2.0"
